@@ -1,22 +1,26 @@
 import PatternDetectionService from '../../src/services/PatternDetectionService';
 
 describe('PatternDetectionService', () => {
+  let patternDetectionService;
+
   beforeEach(() => {
     document.body.innerHTML = '';
-    PatternDetectionService.knownPatterns.clear();
-    PatternDetectionService.observationCount.clear();
+    PatternDetectionService.instance = null;
+    patternDetectionService = PatternDetectionService.getInstance();
+    patternDetectionService.knownPatterns.clear();
+    patternDetectionService.observationCount.clear();
   });
 
   afterEach(() => {
-    PatternDetectionService.stopObserving();
+    patternDetectionService.stopObserving();
   });
 
   test('should start and stop observing', () => {
-    PatternDetectionService.startObserving();
-    expect(PatternDetectionService.observer).toBeTruthy();
+    patternDetectionService.startObserving();
+    expect(patternDetectionService.observer).toBeTruthy();
 
-    PatternDetectionService.stopObserving();
-    expect(PatternDetectionService.observer).toBeNull();
+    patternDetectionService.stopObserving();
+    expect(patternDetectionService.observer).toBeNull();
   });
 
   test('should detect new patterns', () => {
@@ -28,10 +32,10 @@ describe('PatternDetectionService', () => {
     `;
 
     // Trigger pattern detection
-    PatternDetectionService.analyzeChanges();
+    patternDetectionService.analyzeChanges();
 
     // Check if the pattern was recorded
-    const patterns = Array.from(PatternDetectionService.knownPatterns.values());
+    const patterns = Array.from(patternDetectionService.knownPatterns.values());
     expect(patterns.length).toBeGreaterThan(0);
     expect(patterns[0].selectors).toContain('[role="feed"]');
   });
@@ -44,7 +48,7 @@ describe('PatternDetectionService', () => {
     `;
 
     const element = document.querySelector('#test-feed');
-    const selectors = PatternDetectionService.generateSelectors(element);
+    const selectors = patternDetectionService.generateSelectors(element);
 
     expect(selectors).toContain('#test-feed');
     expect(selectors).toContain('.feed-container');
@@ -59,13 +63,13 @@ describe('PatternDetectionService', () => {
 
     // Simulate multiple observations
     for (let i = 0; i < 3; i++) {
-      PatternDetectionService.analyzeChanges();
+      patternDetectionService.analyzeChanges();
     }
 
-    const signatures = Array.from(PatternDetectionService.observationCount.keys());
+    const signatures = Array.from(patternDetectionService.observationCount.keys());
     expect(signatures.length).toBeGreaterThan(0);
 
-    const count = PatternDetectionService.observationCount.get(signatures[0]);
+    const count = patternDetectionService.observationCount.get(signatures[0]);
     expect(count).toBe(3);
   });
 
@@ -78,7 +82,7 @@ describe('PatternDetectionService', () => {
 
     // Simulate observations above threshold
     for (let i = 0; i < 4; i++) {
-      PatternDetectionService.analyzeChanges();
+      patternDetectionService.analyzeChanges();
     }
 
     expect(consoleSpy).toHaveBeenCalledWith(

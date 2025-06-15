@@ -7,13 +7,16 @@ describe('PatternDetectionService', () => {
   beforeEach(() => {
     // Reset the singleton instance
     PatternDetectionService.instance = null;
-    patternDetectionService = new PatternDetectionService();
+    patternDetectionService = PatternDetectionService.getInstance();
     mockElement = document.createElement('div');
     document.body.appendChild(mockElement);
   });
 
   afterEach(() => {
-    document.body.removeChild(mockElement);
+    if (mockElement && mockElement.parentNode) {
+      mockElement.parentNode.removeChild(mockElement);
+    }
+    patternDetectionService.disconnect();
     jest.clearAllMocks();
   });
 
@@ -27,61 +30,93 @@ describe('PatternDetectionService', () => {
 
   describe('findElement', () => {
     it('should find element immediately if present', async () => {
-      const selector = '#test-element';
-      mockElement.id = 'test-element';
-      
-      const result = await patternDetectionService.findElement(selector);
-      expect(result).toBe(mockElement);
+      const element = document.createElement('div');
+      element.setAttribute('role', 'feed');
+      document.body.appendChild(element);
+
+      const result = await patternDetectionService.findElement('[role="feed"]');
+      expect(result).toBe(element);
+
+      document.body.removeChild(element);
     });
 
     it('should find element after a delay', async () => {
-      const selector = '#delayed-element';
+      const element = document.createElement('div');
+      element.setAttribute('role', 'feed');
+
       setTimeout(() => {
-        mockElement.id = 'delayed-element';
+        document.body.appendChild(element);
       }, 100);
 
-      const result = await patternDetectionService.findElement(selector);
-      expect(result).toBe(mockElement);
+      const result = await patternDetectionService.findElement('[role="feed"]');
+      expect(result).toBe(element);
+
+      document.body.removeChild(element);
     });
 
     it('should timeout if element not found', async () => {
-      const selector = '#nonexistent-element';
-      await expect(patternDetectionService.findElement(selector))
-        .rejects
-        .toThrow('Element not found');
-    });
+      const result = await patternDetectionService.findElement('[role="nonexistent"]', 100);
+      expect(result).toBeNull();
+    }, 2000); // Increase timeout for this test
   });
 
   describe('observeElement', () => {
-    it('should observe element mutations', () => {
+    it('should observe element mutations', async () => {
+      const element = document.createElement('div');
+      document.body.appendChild(element);
+
       const callback = jest.fn();
-      patternDetectionService.observeElement(mockElement, callback);
-      
-      mockElement.innerHTML = '<div>New content</div>';
+      patternDetectionService.observeElement(element, callback);
+
+      // Wait for the debounce to complete
+      await new Promise(resolve => setTimeout(resolve, 1100));
+      element.setAttribute('data-test', 'test');
+      await new Promise(resolve => setTimeout(resolve, 1100));
+
       expect(callback).toHaveBeenCalled();
+
+      document.body.removeChild(element);
     });
 
-    it('should handle multiple observers', () => {
+    it('should handle multiple observers', async () => {
+      const element = document.createElement('div');
+      document.body.appendChild(element);
+
       const callback1 = jest.fn();
       const callback2 = jest.fn();
-      
-      patternDetectionService.observeElement(mockElement, callback1);
-      patternDetectionService.observeElement(mockElement, callback2);
-      
-      mockElement.innerHTML = '<div>New content</div>';
+
+      patternDetectionService.observeElement(element, callback1);
+      patternDetectionService.observeElement(element, callback2);
+
+      // Wait for the debounce to complete
+      await new Promise(resolve => setTimeout(resolve, 1100));
+      element.setAttribute('data-test', 'test');
+      await new Promise(resolve => setTimeout(resolve, 1100));
+
       expect(callback1).toHaveBeenCalled();
       expect(callback2).toHaveBeenCalled();
+
+      document.body.removeChild(element);
     });
   });
 
   describe('disconnect', () => {
-    it('should disconnect all observers', () => {
+    it('should disconnect all observers', async () => {
+      const element = document.createElement('div');
+      document.body.appendChild(element);
+
       const callback = jest.fn();
-      patternDetectionService.observeElement(mockElement, callback);
-      
+      patternDetectionService.observeElement(element, callback);
       patternDetectionService.disconnect();
-      mockElement.innerHTML = '<div>New content</div>';
+
+      // Wait for the debounce to complete
+      await new Promise(resolve => setTimeout(resolve, 1100));
+      element.setAttribute('data-test', 'test');
+      await new Promise(resolve => setTimeout(resolve, 1100));
+
       expect(callback).not.toHaveBeenCalled();
+
+      document.body.removeChild(element);
     });
   });
 }); 

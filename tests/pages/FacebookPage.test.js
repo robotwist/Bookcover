@@ -1,54 +1,94 @@
 import FacebookPage from '../../src/pages/FacebookPage';
+import ConfigService from '../../src/services/ConfigService';
+import PatternDetectionService from '../../src/services/PatternDetectionService';
+
+jest.mock('../../src/services/ConfigService');
+jest.mock('../../src/services/PatternDetectionService');
 
 describe('FacebookPage', () => {
-  let page;
+  let facebookPage;
+  let mockConfigService;
+  let mockPatternDetectionService;
+  let mockFeedElement;
+  let mockReelsElement;
 
   beforeEach(() => {
-    // Set up a basic DOM structure that mimics Facebook
-    document.body.innerHTML = `
-      <div role="feed">
-        <div data-pagelet="FeedUnit_1">Feed Content 1</div>
-        <div data-pagelet="FeedUnit_2">Feed Content 2</div>
-      </div>
-      <div aria-label="Reels">
-        <div>Reels Content</div>
-      </div>
-      <a href="/reels">Reels Link</a>
-    `;
+    // Reset singleton instances
+    ConfigService.instance = null;
+    PatternDetectionService.instance = null;
 
-    page = new FacebookPage();
+    // Create mock instances
+    mockConfigService = {
+      getSelector: jest.fn().mockImplementation((key) => {
+        const selectors = {
+          feed: '[role="feed"]',
+          reels: '[role="region"][aria-label*="Reels"]',
+          stories: '[role="region"][aria-label*="Stories"]'
+        };
+        return selectors[key];
+      }),
+      getConfig: jest.fn().mockReturnValue({
+        selectors: {
+          feed: '[role="feed"]',
+          reels: '[role="region"][aria-label*="Reels"]',
+          stories: '[role="region"][aria-label*="Stories"]'
+        }
+      })
+    };
+    mockPatternDetectionService = {
+      findElement: jest.fn(),
+      observeElement: jest.fn(),
+      disconnect: jest.fn()
+    };
+
+    // Mock static getInstance methods
+    ConfigService.getInstance = jest.fn().mockReturnValue(mockConfigService);
+    PatternDetectionService.getInstance = jest.fn().mockReturnValue(mockPatternDetectionService);
+
+    // Create mock DOM elements
+    mockFeedElement = document.createElement('div');
+    mockFeedElement.setAttribute('role', 'feed');
+    document.body.appendChild(mockFeedElement);
+
+    mockReelsElement = document.createElement('div');
+    mockReelsElement.setAttribute('role', 'region');
+    mockReelsElement.setAttribute('aria-label', 'Reels');
+    document.body.appendChild(mockReelsElement);
+
+    facebookPage = new FacebookPage();
   });
 
   afterEach(() => {
-    document.body.innerHTML = '';
+    if (mockFeedElement && mockFeedElement.parentNode) {
+      mockFeedElement.parentNode.removeChild(mockFeedElement);
+    }
+    if (mockReelsElement && mockReelsElement.parentNode) {
+      mockReelsElement.parentNode.removeChild(mockReelsElement);
+    }
+    jest.clearAllMocks();
   });
 
-  test('should initialize components', () => {
-    expect(page.feed).toBeTruthy();
-    expect(page.reels).toBeTruthy();
+  it('should initialize components', () => {
+    expect(facebookPage.feed).toBeDefined();
+    expect(facebookPage.reels).toBeDefined();
+    expect(facebookPage.stories).toBeDefined();
   });
 
-  test('should hide feed elements', async () => {
-    await page.hideDistractions();
-    const feedHidden = await page.isFeedHidden();
-    expect(feedHidden).toBe(true);
+  it('should hide feed elements', async () => {
+    mockPatternDetectionService.findElement.mockResolvedValue(mockFeedElement);
+    await facebookPage.hideFeed();
+    expect(mockFeedElement.style.display).toBe('none');
   });
 
-  test('should hide reels elements', async () => {
-    await page.hideDistractions();
-    const reelsHidden = await page.isReelsHidden();
-    expect(reelsHidden).toBe(true);
+  it('should hide reels elements', async () => {
+    mockPatternDetectionService.findElement.mockResolvedValue(mockReelsElement);
+    await facebookPage.hideReels();
+    expect(mockReelsElement.style.display).toBe('none');
   });
 
-  test('should handle errors gracefully', async () => {
-    // Simulate an error by removing elements
-    document.body.innerHTML = '';
-
-    // Should not throw, but return false for hidden checks
-    const feedHidden = await page.isFeedHidden();
-    const reelsHidden = await page.isReelsHidden();
-
-    expect(feedHidden).toBe(false);
-    expect(reelsHidden).toBe(false);
+  it('should handle errors gracefully', async () => {
+    mockPatternDetectionService.findElement.mockRejectedValue(new Error('Test error'));
+    await expect(facebookPage.hideFeed()).resolves.not.toThrow();
+    await expect(facebookPage.hideReels()).resolves.not.toThrow();
   });
 });

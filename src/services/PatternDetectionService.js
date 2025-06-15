@@ -5,10 +5,71 @@ import { debounce } from '../utils/helpers';
  */
 class PatternDetectionService {
   constructor() {
+    if (PatternDetectionService.instance) {
+      return PatternDetectionService.instance;
+    }
     this.knownPatterns = new Map();
     this.observationCount = new Map();
     this.observer = null;
     this.DETECTION_THRESHOLD = 3; // Number of observations before considering a pattern valid
+    PatternDetectionService.instance = this;
+  }
+
+  static getInstance() {
+    if (!PatternDetectionService.instance) {
+      PatternDetectionService.instance = new PatternDetectionService();
+    }
+    return PatternDetectionService.instance;
+  }
+
+  /**
+   * Find an element in the DOM, waiting for it to appear if necessary
+   * @param {string} selector - The CSS selector to find the element
+   * @param {number} timeout - Maximum time to wait in milliseconds
+   * @returns {Promise<Element|null>} - The found element or null if not found
+   */
+  async findElement(selector, timeout = 5000) {
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < timeout) {
+      const element = document.querySelector(selector);
+      if (element) {
+        return element;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    return null;
+  }
+
+  /**
+   * Observe an element for mutations
+   * @param {Element} element - The element to observe
+   * @param {Function} callback - Callback to execute when mutations occur
+   */
+  observeElement(element, callback) {
+    if (!this.observer) {
+      this.observer = new MutationObserver(
+        debounce(() => callback(), 1000)
+      );
+    }
+
+    this.observer.observe(element, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'id', 'aria-label'],
+    });
+  }
+
+  /**
+   * Disconnect all observers
+   */
+  disconnect() {
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
   }
 
   /**
@@ -180,4 +241,4 @@ class PatternDetectionService {
   }
 }
 
-export default new PatternDetectionService();
+export default PatternDetectionService;

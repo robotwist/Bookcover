@@ -1,6 +1,8 @@
 import Feed from './components/Feed';
 import Reels from './components/Reels';
 import Stories from './components/Stories';
+import ConfigService from '../services/ConfigService';
+import PatternDetectionService from '../services/PatternDetectionService';
 
 /**
  * FacebookPage - Main page object for Facebook
@@ -8,6 +10,8 @@ import Stories from './components/Stories';
  */
 class FacebookPage {
   constructor() {
+    this.config = ConfigService.getInstance();
+    this.patternDetection = PatternDetectionService.getInstance();
     this.feed = null;
     this.reels = null;
     this.stories = null;
@@ -20,18 +24,36 @@ class FacebookPage {
     this.stories = new Stories();
   }
 
-  async hideDistractions() {
+  async hideFeed() {
     try {
-      await Promise.all([
-        this.feed.hide(),
-        this.reels.hide(),
-        this.stories.hide(),
-      ]);
-      console.log('Bookcover: Distractions hidden successfully');
+      await this.feed.hide();
     } catch (error) {
-      console.error('Bookcover: Error hiding distractions:', error);
-      throw error;
+      console.error('Bookcover: Error hiding feed:', error);
     }
+  }
+
+  async hideReels() {
+    try {
+      await this.reels.hide();
+    } catch (error) {
+      console.error('Bookcover: Error hiding reels:', error);
+    }
+  }
+
+  async hideStories() {
+    try {
+      await this.stories.hide();
+    } catch (error) {
+      console.error('Bookcover: Error hiding stories:', error);
+    }
+  }
+
+  async hideDistractions() {
+    await Promise.all([
+      this.hideFeed(),
+      this.hideReels(),
+      this.hideStories()
+    ]);
   }
 
   async isFeedHidden() {

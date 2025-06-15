@@ -2,17 +2,22 @@ import Feed from '../../src/pages/components/Feed';
 import ConfigService from '../../src/services/ConfigService';
 
 // Mock ConfigService
-jest.mock('../../src/services/ConfigService', () => ({
-  getConfig: jest.fn().mockResolvedValue({
-    selectors: {
-      feed: {
-        main: '[role="feed"]',
+jest.mock('../../src/services/ConfigService', () => {
+  const mockInstance = {
+    getSelector: jest.fn().mockImplementation((key) => {
+      const selectors = {
+        feed: '[role="feed"]',
         feedUnit: 'div[data-pagelet^="FeedUnit_"]',
         sponsored: '[aria-label="Sponsored"]',
-      },
-    },
-  }),
-}));
+      };
+      return selectors[key];
+    }),
+  };
+
+  return {
+    getInstance: jest.fn().mockReturnValue(mockInstance),
+  };
+});
 
 describe('Feed Component', () => {
   let feed;
@@ -34,10 +39,9 @@ describe('Feed Component', () => {
     jest.clearAllMocks();
   });
 
-  test('should initialize with selectors from ConfigService', async () => {
-    await feed.ensureSelectors();
-    expect(feed.selectors).toBeTruthy();
-    expect(ConfigService.getConfig).toHaveBeenCalled();
+  test('should initialize with selectors from ConfigService', () => {
+    expect(feed.feedSelector).toBe('[role="feed"]');
+    expect(ConfigService.getInstance).toHaveBeenCalled();
   });
 
   test('should hide feed elements', async () => {

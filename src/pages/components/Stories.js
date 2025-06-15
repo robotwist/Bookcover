@@ -25,46 +25,31 @@ class Stories {
 
   async hide() {
     try {
-      if (!this.storiesContainer) {
-        await this.initialize();
-      }
+      this.storiesContainer = await this.patternDetection.findElement(this.storiesSelector);
       if (this.storiesContainer) {
         this.storiesContainer.style.display = 'none';
-        return true;
       }
-      return false;
     } catch (error) {
       console.error('Bookcover: Error hiding stories:', error);
-      return false;
     }
   }
 
   async show() {
     try {
-      if (!this.storiesContainer) {
-        await this.initialize();
-      }
+      this.storiesContainer = await this.patternDetection.findElement(this.storiesSelector);
       if (this.storiesContainer) {
         this.storiesContainer.style.display = 'block';
-        return true;
       }
-      return false;
     } catch (error) {
       console.error('Bookcover: Error showing stories:', error);
-      return false;
     }
   }
 
-  async isHidden() {
-    try {
-      if (!this.storiesContainer) {
-        await this.initialize();
-      }
-      return this.storiesContainer?.style.display === 'none';
-    } catch (error) {
-      console.error('Bookcover: Error checking stories visibility:', error);
+  isHidden() {
+    if (!this.storiesContainer) {
       return false;
     }
+    return this.storiesContainer.style.display === 'none';
   }
 }
 

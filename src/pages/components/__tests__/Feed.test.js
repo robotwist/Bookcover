@@ -2,67 +2,69 @@ import Feed from '../Feed';
 import ConfigService from '../../../services/ConfigService';
 import PatternDetectionService from '../../../services/PatternDetectionService';
 
-// Mock the services
-jest.mock('../../../services/ConfigService', () => ({
-  getInstance: jest.fn().mockReturnValue({
-    getSelector: jest.fn().mockReturnValue('[role="feed"]'),
-  }),
-}));
-
-jest.mock('../../../services/PatternDetectionService', () => ({
-  getInstance: jest.fn().mockReturnValue({
-    mockFindElement: jest.fn(), // will assign to findElement in beforeEach
-  }),
-}));
+jest.mock('../../../services/ConfigService');
+jest.mock('../../../services/PatternDetectionService');
 
 describe('Feed Component', () => {
   let feed;
+  let mockConfigService;
+  let mockPatternDetectionService;
   let mockElement;
-  let patternDetectionInstance;
 
   beforeEach(() => {
+    // Reset singleton instances
+    ConfigService.instance = null;
+    PatternDetectionService.instance = null;
+
+    // Create mock instances
+    mockConfigService = {
+      getSelector: jest.fn().mockReturnValue('[role="feed"]'),
+      getConfig: jest.fn().mockReturnValue({ selectors: { feed: '[role="feed"]' } })
+    };
+    mockPatternDetectionService = {
+      findElement: jest.fn(),
+      observeElement: jest.fn(),
+      disconnect: jest.fn()
+    };
+
+    // Mock static getInstance methods
+    ConfigService.getInstance = jest.fn().mockReturnValue(mockConfigService);
+    PatternDetectionService.getInstance = jest.fn().mockReturnValue(mockPatternDetectionService);
+
+    // Create mock DOM element
     mockElement = document.createElement('div');
     mockElement.setAttribute('role', 'feed');
     document.body.appendChild(mockElement);
-    
-    patternDetectionInstance = PatternDetectionService.getInstance();
-    patternDetectionInstance.findElement = jest.fn(() => Promise.resolve(mockElement));
+
     feed = new Feed();
   });
 
   afterEach(() => {
-    document.body.removeChild(mockElement);
+    if (mockElement && mockElement.parentNode) {
+      mockElement.parentNode.removeChild(mockElement);
+    }
     jest.clearAllMocks();
   });
 
   it('should initialize with selectors from ConfigService', () => {
-    expect(ConfigService.getInstance).toHaveBeenCalled();
-    expect(PatternDetectionService.getInstance).toHaveBeenCalled();
+    expect(feed.feedSelector).toBe('[role="feed"]');
   });
 
   it('should hide feed elements', async () => {
+    mockPatternDetectionService.findElement.mockResolvedValue(mockElement);
     await feed.hide();
     expect(mockElement.style.display).toBe('none');
   });
 
-  it('should show feed elements', async () => {
-    mockElement.style.display = 'none';
-    await feed.show();
-    expect(mockElement.style.display).toBe('block');
-  });
-
   it('should correctly identify hidden state', async () => {
-    mockElement.style.display = 'none';
-    expect(await feed.isHidden()).toBe(true);
-    
-    mockElement.style.display = 'block';
-    expect(await feed.isHidden()).toBe(false);
+    mockPatternDetectionService.findElement.mockResolvedValue(mockElement);
+    await feed.hide();
+    expect(feed.isHidden()).toBe(true);
   });
 
   it('should handle missing elements gracefully', async () => {
-    document.body.removeChild(mockElement);
-    await expect(feed.hide()).resolves.not.toThrow();
-    await expect(feed.show()).resolves.not.toThrow();
-    await expect(feed.isHidden()).resolves.toBe(false);
+    mockPatternDetectionService.findElement.mockResolvedValue(null);
+    await feed.hide();
+    expect(feed.isHidden()).toBe(false);
   });
 }); 

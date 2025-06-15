@@ -25,9 +25,7 @@ class Feed {
 
   async hide() {
     try {
-      if (!this.feedContainer) {
-        await this.initialize();
-      }
+      this.feedContainer = await this.patternDetection.findElement(this.feedSelector);
       if (this.feedContainer) {
         this.feedContainer.style.display = 'none';
         return true;
@@ -41,9 +39,7 @@ class Feed {
 
   async show() {
     try {
-      if (!this.feedContainer) {
-        await this.initialize();
-      }
+      this.feedContainer = await this.patternDetection.findElement(this.feedSelector);
       if (this.feedContainer) {
         this.feedContainer.style.display = 'block';
         return true;
@@ -55,16 +51,11 @@ class Feed {
     }
   }
 
-  async isHidden() {
-    try {
-      if (!this.feedContainer) {
-        await this.initialize();
-      }
-      return this.feedContainer?.style.display === 'none';
-    } catch (error) {
-      console.error('Bookcover: Error checking feed visibility:', error);
+  isHidden() {
+    if (!this.feedContainer) {
       return false;
     }
+    return this.feedContainer.style.display === 'none';
   }
 }
 

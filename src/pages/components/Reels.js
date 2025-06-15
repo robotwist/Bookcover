@@ -25,46 +25,31 @@ class Reels {
 
   async hide() {
     try {
-      if (!this.reelsContainer) {
-        await this.initialize();
-      }
+      this.reelsContainer = await this.patternDetection.findElement(this.reelsSelector);
       if (this.reelsContainer) {
         this.reelsContainer.style.display = 'none';
-        return true;
       }
-      return false;
     } catch (error) {
       console.error('Bookcover: Error hiding reels:', error);
-      return false;
     }
   }
 
   async show() {
     try {
-      if (!this.reelsContainer) {
-        await this.initialize();
-      }
+      this.reelsContainer = await this.patternDetection.findElement(this.reelsSelector);
       if (this.reelsContainer) {
         this.reelsContainer.style.display = 'block';
-        return true;
       }
-      return false;
     } catch (error) {
       console.error('Bookcover: Error showing reels:', error);
-      return false;
     }
   }
 
-  async isHidden() {
-    try {
-      if (!this.reelsContainer) {
-        await this.initialize();
-      }
-      return this.reelsContainer?.style.display === 'none';
-    } catch (error) {
-      console.error('Bookcover: Error checking reels visibility:', error);
+  isHidden() {
+    if (!this.reelsContainer) {
       return false;
     }
+    return this.reelsContainer.style.display === 'none';
   }
 }
 
