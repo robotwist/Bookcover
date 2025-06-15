@@ -25,7 +25,7 @@ class FacebookPage {
       await Promise.all([
         this.feed.hide(),
         this.reels.hide(),
-        this.stories.hide()
+        this.stories.hide(),
       ]);
       console.log('Bookcover: Distractions hidden successfully');
     } catch (error) {
@@ -47,4 +47,4 @@ class FacebookPage {
   }
 }
 
-export default FacebookPage; 
+export default FacebookPage;

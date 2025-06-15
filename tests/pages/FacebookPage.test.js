@@ -2,7 +2,7 @@ import FacebookPage from '../../src/pages/FacebookPage';
 
 describe('FacebookPage', () => {
   let page;
-  
+
   beforeEach(() => {
     // Set up a basic DOM structure that mimics Facebook
     document.body.innerHTML = `
@@ -15,7 +15,7 @@ describe('FacebookPage', () => {
       </div>
       <a href="/reels">Reels Link</a>
     `;
-    
+
     page = new FacebookPage();
   });
 
@@ -43,12 +43,12 @@ describe('FacebookPage', () => {
   test('should handle errors gracefully', async () => {
     // Simulate an error by removing elements
     document.body.innerHTML = '';
-    
+
     // Should not throw, but return false for hidden checks
     const feedHidden = await page.isFeedHidden();
     const reelsHidden = await page.isReelsHidden();
-    
+
     expect(feedHidden).toBe(false);
     expect(reelsHidden).toBe(false);
   });
-}); 
+});

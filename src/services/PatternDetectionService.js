@@ -20,14 +20,14 @@ class PatternDetectionService {
     }
 
     this.observer = new MutationObserver(
-      debounce(() => this.analyzeChanges(), 1000)
+      debounce(() => this.analyzeChanges(), 1000),
     );
 
     this.observer.observe(document.body, {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['class', 'id', 'aria-label']
+      attributeFilter: ['class', 'id', 'aria-label'],
     });
   }
 
@@ -48,15 +48,13 @@ class PatternDetectionService {
   findNewElements() {
     const potentialElements = [];
     const keywords = ['feed', 'reel', 'story', 'sponsored', 'suggested'];
-    
-    document.querySelectorAll('div[role], div[aria-label], div[data-pagelet]').forEach(element => {
+
+    document.querySelectorAll('div[role], div[aria-label], div[data-pagelet]').forEach((element) => {
       const text = element.textContent.toLowerCase();
       const attributes = this.getElementAttributes(element);
-      
-      if (keywords.some(keyword => 
-        text.includes(keyword) || 
-        attributes.some(attr => attr.includes(keyword))
-      )) {
+
+      if (keywords.some((keyword) => text.includes(keyword)
+        || attributes.some((attr) => attr.includes(keyword)))) {
         potentialElements.push(element);
       }
     });
@@ -90,7 +88,7 @@ class PatternDetectionService {
     return JSON.stringify({
       attributes,
       structure,
-      tag: element.tagName
+      tag: element.tagName,
     });
   }
 
@@ -98,9 +96,9 @@ class PatternDetectionService {
    * Get the DOM structure pattern of an element
    */
   getElementStructure(element) {
-    return Array.from(element.children).map(child => ({
+    return Array.from(element.children).map((child) => ({
       tag: child.tagName,
-      classes: Array.from(child.classList)
+      classes: Array.from(child.classList),
     }));
   }
 
@@ -112,13 +110,13 @@ class PatternDetectionService {
       this.knownPatterns.set(signature, {
         selectors: this.generateSelectors(element),
         content: element.textContent,
-        structure: this.getElementStructure(element)
+        structure: this.getElementStructure(element),
       });
       this.observationCount.set(signature, 1);
     } else {
       const count = this.observationCount.get(signature) + 1;
       this.observationCount.set(signature, count);
-      
+
       if (count >= this.DETECTION_THRESHOLD) {
         this.reportNewPattern(signature);
       }
@@ -130,19 +128,19 @@ class PatternDetectionService {
    */
   generateSelectors(element) {
     const selectors = [];
-    
+
     // Try ID first
     if (element.id) {
       selectors.push(`#${element.id}`);
     }
-    
+
     // Then try classes
     if (element.classList.length > 0) {
-      element.classList.forEach(cls => {
+      element.classList.forEach((cls) => {
         selectors.push(`.${cls}`);
       });
     }
-    
+
     // Then try role and aria-label
     if (element.getAttribute('role')) {
       selectors.push(`[role="${element.getAttribute('role')}"]`);
@@ -150,7 +148,7 @@ class PatternDetectionService {
     if (element.getAttribute('aria-label')) {
       selectors.push(`[aria-label="${element.getAttribute('aria-label')}"]`);
     }
-    
+
     return selectors;
   }
 
@@ -162,9 +160,9 @@ class PatternDetectionService {
     console.log('Bookcover: New pattern detected:', {
       selectors: pattern.selectors,
       content: pattern.content,
-      structure: pattern.structure
+      structure: pattern.structure,
     });
-    
+
     // Here you could:
     // 1. Update the ConfigService with new selectors
     // 2. Send telemetry data
@@ -182,4 +180,4 @@ class PatternDetectionService {
   }
 }
 
-export default new PatternDetectionService(); 
+export default new PatternDetectionService();

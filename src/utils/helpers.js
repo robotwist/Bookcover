@@ -41,7 +41,7 @@ export function waitForElement(selector, timeout = 5000) {
 
     observer.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
 
     setTimeout(() => {
@@ -64,4 +64,4 @@ export async function safeExecute(func, errorMessage) {
     console.error(errorMessage, error);
     return null;
   }
-} 
+}

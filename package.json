@@ -5,12 +5,18 @@
   "main": "src/content.js",
   "scripts": {
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.js tests/**/*.js",
+    "lint:fix": "eslint src/**/*.js tests/**/*.js --fix",
+    "build": "mkdir -p dist && cp -r src/* dist/ && cp manifest.json dist/ && cp config.json dist/"
   },
   "devDependencies": {
     "@babel/core": "^7.23.0",
     "@babel/preset-env": "^7.23.0",
     "babel-jest": "^29.7.0",
+    "eslint": "^8.55.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.29.1",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0"
   },

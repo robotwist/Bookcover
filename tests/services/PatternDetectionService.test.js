@@ -14,7 +14,7 @@ describe('PatternDetectionService', () => {
   test('should start and stop observing', () => {
     PatternDetectionService.startObserving();
     expect(PatternDetectionService.observer).toBeTruthy();
-    
+
     PatternDetectionService.stopObserving();
     expect(PatternDetectionService.observer).toBeNull();
   });
@@ -64,14 +64,14 @@ describe('PatternDetectionService', () => {
 
     const signatures = Array.from(PatternDetectionService.observationCount.keys());
     expect(signatures.length).toBeGreaterThan(0);
-    
+
     const count = PatternDetectionService.observationCount.get(signatures[0]);
     expect(count).toBe(3);
   });
 
   test('should report patterns after threshold', () => {
     const consoleSpy = jest.spyOn(console, 'log');
-    
+
     document.body.innerHTML = `
       <div role="feed">Content</div>
     `;
@@ -83,9 +83,9 @@ describe('PatternDetectionService', () => {
 
     expect(consoleSpy).toHaveBeenCalledWith(
       'Bookcover: New pattern detected:',
-      expect.any(Object)
+      expect.any(Object),
     );
 
     consoleSpy.mockRestore();
   });
-}); 
+});

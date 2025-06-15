@@ -8,15 +8,15 @@ jest.mock('../../src/services/ConfigService', () => ({
       feed: {
         main: '[role="feed"]',
         feedUnit: 'div[data-pagelet^="FeedUnit_"]',
-        sponsored: '[aria-label="Sponsored"]'
-      }
-    }
-  })
+        sponsored: '[aria-label="Sponsored"]',
+      },
+    },
+  }),
 }));
 
 describe('Feed Component', () => {
   let feed;
-  
+
   beforeEach(() => {
     document.body.innerHTML = `
       <div role="feed">
@@ -25,7 +25,7 @@ describe('Feed Component', () => {
       </div>
       <div aria-label="Sponsored">Sponsored Content</div>
     `;
-    
+
     feed = new Feed();
   });
 
@@ -43,9 +43,9 @@ describe('Feed Component', () => {
   test('should hide feed elements', async () => {
     const result = await feed.hide();
     expect(result).toBe(true);
-    
+
     const elements = document.querySelectorAll('[role="feed"], div[data-pagelet^="FeedUnit_"], [aria-label="Sponsored"]');
-    elements.forEach(el => {
+    elements.forEach((el) => {
       expect(el.style.display).toBe('none');
     });
   });
@@ -61,4 +61,4 @@ describe('Feed Component', () => {
     const isHidden = await feed.isHidden();
     expect(isHidden).toBe(false);
   });
-}); 
+});

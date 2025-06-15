@@ -37,18 +37,18 @@ class ConfigService {
         feed: {
           main: '[role="feed"]',
           feedUnit: 'div[data-pagelet^="FeedUnit_"]',
-          sponsored: '[aria-label="Sponsored"]'
+          sponsored: '[aria-label="Sponsored"]',
         },
         reels: {
           main: 'div[aria-label="Reels"]',
           link: 'a[href*="reels"]',
-          container: 'div[data-pagelet="Reels"]'
+          container: 'div[data-pagelet="Reels"]',
         },
         stories: {
           main: '[aria-label="Stories"]',
           create: '[aria-label="Create a story"]',
-          container: 'div[data-pagelet="Stories"]'
-        }
+          container: 'div[data-pagelet="Stories"]',
+        },
       },
       keywords: [
         'Sponsored',
@@ -57,10 +57,10 @@ class ConfigService {
         'Watch',
         'Stories',
         'Marketplace',
-        'Gaming'
-      ]
+        'Gaming',
+      ],
     };
   }
 }
 
-export default new ConfigService(); 
+export default new ConfigService();
