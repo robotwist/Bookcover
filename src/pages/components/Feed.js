@@ -27,7 +27,15 @@ class Feed {
     try {
       this.feedContainer = await this.patternDetection.findElement(this.feedSelector);
       if (this.feedContainer) {
+        // Hide the main feed container
         this.feedContainer.style.display = 'none';
+        
+        // Hide all feed units and sponsored content
+        const elements = document.querySelectorAll('div[data-pagelet^="FeedUnit_"], [aria-label="Sponsored"]');
+        elements.forEach(element => {
+          element.style.display = 'none';
+        });
+        
         return true;
       }
       return false;
@@ -41,7 +49,15 @@ class Feed {
     try {
       this.feedContainer = await this.patternDetection.findElement(this.feedSelector);
       if (this.feedContainer) {
+        // Show the main feed container
         this.feedContainer.style.display = 'block';
+        
+        // Show all feed units and sponsored content
+        const elements = document.querySelectorAll('div[data-pagelet^="FeedUnit_"], [aria-label="Sponsored"]');
+        elements.forEach(element => {
+          element.style.display = 'block';
+        });
+        
         return true;
       }
       return false;

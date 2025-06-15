@@ -1,5 +1,30 @@
 import PatternDetectionService from '../PatternDetectionService';
 
+// Mock MutationObserver
+class MockMutationObserver {
+  constructor(callback) {
+    this.callback = callback;
+    this.observedElements = new Set();
+  }
+
+  observe(element, options) {
+    this.observedElements.add(element);
+  }
+
+  disconnect() {
+    this.observedElements.clear();
+  }
+
+  // Helper method to simulate mutations
+  simulateMutation(element) {
+    if (this.observedElements.has(element)) {
+      this.callback([{ target: element }]);
+    }
+  }
+}
+
+global.MutationObserver = MockMutationObserver;
+
 describe('PatternDetectionService', () => {
   let patternDetectionService;
   let mockElement;
@@ -16,7 +41,6 @@ describe('PatternDetectionService', () => {
     if (mockElement && mockElement.parentNode) {
       mockElement.parentNode.removeChild(mockElement);
     }
-    patternDetectionService.disconnect();
     jest.clearAllMocks();
   });
 
@@ -68,9 +92,10 @@ describe('PatternDetectionService', () => {
       const callback = jest.fn();
       patternDetectionService.observeElement(element, callback);
 
+      // Simulate a mutation
+      patternDetectionService.observer.simulateMutation(element);
+
       // Wait for the debounce to complete
-      await new Promise(resolve => setTimeout(resolve, 1100));
-      element.setAttribute('data-test', 'test');
       await new Promise(resolve => setTimeout(resolve, 1100));
 
       expect(callback).toHaveBeenCalled();
@@ -88,9 +113,10 @@ describe('PatternDetectionService', () => {
       patternDetectionService.observeElement(element, callback1);
       patternDetectionService.observeElement(element, callback2);
 
+      // Simulate a mutation
+      patternDetectionService.observer.simulateMutation(element);
+
       // Wait for the debounce to complete
-      await new Promise(resolve => setTimeout(resolve, 1100));
-      element.setAttribute('data-test', 'test');
       await new Promise(resolve => setTimeout(resolve, 1100));
 
       expect(callback1).toHaveBeenCalled();
@@ -107,11 +133,14 @@ describe('PatternDetectionService', () => {
 
       const callback = jest.fn();
       patternDetectionService.observeElement(element, callback);
+      // Save a reference to the observer before disconnecting
+      const observerRef = patternDetectionService.observer;
       patternDetectionService.disconnect();
 
+      // Simulate a mutation after disconnect
+      observerRef.simulateMutation(element);
+
       // Wait for the debounce to complete
-      await new Promise(resolve => setTimeout(resolve, 1100));
-      element.setAttribute('data-test', 'test');
       await new Promise(resolve => setTimeout(resolve, 1100));
 
       expect(callback).not.toHaveBeenCalled();

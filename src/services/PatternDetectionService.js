@@ -11,6 +11,7 @@ class PatternDetectionService {
     this.knownPatterns = new Map();
     this.observationCount = new Map();
     this.observer = null;
+    this.callbacks = new Set();
     this.DETECTION_THRESHOLD = 3; // Number of observations before considering a pattern valid
     PatternDetectionService.instance = this;
   }
@@ -50,10 +51,13 @@ class PatternDetectionService {
   observeElement(element, callback) {
     if (!this.observer) {
       this.observer = new MutationObserver(
-        debounce(() => callback(), 1000)
+        debounce(() => {
+          this.callbacks.forEach(cb => cb());
+        }, 1000)
       );
     }
 
+    this.callbacks.add(callback);
     this.observer.observe(element, {
       childList: true,
       subtree: true,
@@ -69,6 +73,7 @@ class PatternDetectionService {
     if (this.observer) {
       this.observer.disconnect();
       this.observer = null;
+      this.callbacks.clear();
     }
   }
 
