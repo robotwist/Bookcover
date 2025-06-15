@@ -1,0 +1,27 @@
+{
+  "selectors": [
+    "[role=\"feed\"]",
+    "div[aria-label=\"Reels\"]",
+    "a[href*=\"reels\"]",
+    "a[href=\"/watch/\"]",
+    "[aria-label=\"Stories\"]",
+    "[aria-label=\"Create a story\"]",
+    "div[aria-label=\"Your Shortcuts\"]",
+    "div[aria-label=\"Contacts\"]",
+    "[aria-label=\"Suggested for You\"]",
+    "div[role=\"complementary\"]",
+    "[aria-label=\"Sponsored\"]",
+    "[aria-label=\"Groups Feed\"]",
+    "[aria-label=\"Notifications\"]",
+    "div[data-pagelet^=\"FeedUnit_\"]"
+  ],
+  "keywords": [
+    "Sponsored",
+    "Reels",
+    "Suggested for You",
+    "Watch",
+    "Stories",
+    "Marketplace",
+    "Gaming"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Bookcover",
+  "version": "1.0",
+  "description": "Strip Facebook down to the essentials. No feed, no reels, no distractions.",
+  "permissions": ["scripting", "storage", "activeTab"],
+  "host_permissions": ["https://www.facebook.com/*"],
+  "action": {
+    "default_title": "Bookcover is active"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.facebook.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
