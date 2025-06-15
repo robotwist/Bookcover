@@ -1,55 +1,69 @@
 import ConfigService from '../../services/ConfigService';
-import { safeExecute } from '../../utils/helpers';
+import PatternDetectionService from '../../services/PatternDetectionService';
 
 /**
- * Stories - Component for handling Facebook Stories elements
+ * Stories - Component for managing Facebook stories
+ * Handles stories-specific interactions and state
  */
 class Stories {
   constructor() {
-    this.selectors = null;
-    this.initializeSelectors();
+    this.config = ConfigService.getInstance();
+    this.patternDetection = PatternDetectionService.getInstance();
+    this.storiesSelector = this.config.getSelector('stories');
+    this.storiesContainer = null;
   }
 
-  async initializeSelectors() {
-    const config = await ConfigService.getConfig();
-    this.selectors = config.selectors.stories;
+  async initialize() {
+    try {
+      this.storiesContainer = await this.patternDetection.findElement(this.storiesSelector);
+      return true;
+    } catch (error) {
+      console.error('Bookcover: Error initializing stories:', error);
+      return false;
+    }
   }
 
   async hide() {
-    return await safeExecute(async () => {
-      await this.ensureSelectors();
-      const elements = await this.findElements();
-      elements.forEach(el => {
-        el.style.display = 'none';
-      });
-      return true;
-    }, 'Stories: Error hiding elements');
+    try {
+      if (!this.storiesContainer) {
+        await this.initialize();
+      }
+      if (this.storiesContainer) {
+        this.storiesContainer.style.display = 'none';
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Bookcover: Error hiding stories:', error);
+      return false;
+    }
+  }
+
+  async show() {
+    try {
+      if (!this.storiesContainer) {
+        await this.initialize();
+      }
+      if (this.storiesContainer) {
+        this.storiesContainer.style.display = 'block';
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Bookcover: Error showing stories:', error);
+      return false;
+    }
   }
 
   async isHidden() {
-    return await safeExecute(async () => {
-      await this.ensureSelectors();
-      const elements = await this.findElements();
-      if (elements.length === 0) {
-        return false;
+    try {
+      if (!this.storiesContainer) {
+        await this.initialize();
       }
-      return elements.every(el => el.style.display === 'none');
-    }, 'Stories: Error checking hidden state');
-  }
-
-  async findElements() {
-    await this.ensureSelectors();
-    const elements = [];
-    for (const selector of Object.values(this.selectors)) {
-      const found = document.querySelectorAll(selector);
-      elements.push(...found);
-    }
-    return elements;
-  }
-
-  async ensureSelectors() {
-    if (!this.selectors) {
-      await this.initializeSelectors();
+      return this.storiesContainer?.style.display === 'none';
+    } catch (error) {
+      console.error('Bookcover: Error checking stories visibility:', error);
+      return false;
     }
   }
 }

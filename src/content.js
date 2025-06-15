@@ -1,73 +1,58 @@
 import FacebookPage from './pages/FacebookPage';
-import PatternDetectionService from './services/PatternDetectionService';
-import { debounce } from './utils/helpers';
+import ConfigService from './services/ConfigService';
 
 /**
- * Bookcover - Main content script
- * Initializes the extension and manages the page state
+ * Main content script for the Bookcover extension
+ * Initializes and manages the Facebook page interface
  */
-class Bookcover {
+class ContentScript {
   constructor() {
     this.page = null;
-    this.observer = null;
-    this.isInitialized = false;
+    this.config = null;
   }
 
   async initialize() {
     try {
-      console.log('Bookcover: Initializing...');
-      
-      // Initialize the page object
+      this.config = ConfigService.getInstance();
+      await this.config.loadConfig();
       this.page = new FacebookPage();
-      
-      // Start pattern detection
-      PatternDetectionService.startObserving();
-      
-      // Initial hide of distractions
-      await this.hideDistractions();
-      
-      // Set up mutation observer for dynamic content
-      this.setupObserver();
-      
-      this.isInitialized = true;
-      console.log('Bookcover: Initialization complete');
-    } catch (error) {
-      console.error('Bookcover: Initialization failed:', error);
-    }
-  }
-
-  async hideDistractions() {
-    try {
       await this.page.hideDistractions();
+      this.setupMessageListener();
+      return true;
     } catch (error) {
-      console.error('Bookcover: Error hiding distractions:', error);
+      console.error('Bookcover: Error initializing content script:', error);
+      return false;
     }
   }
 
-  setupObserver() {
-    // Debounce the hide function to prevent too frequent calls
-    const debouncedHide = debounce(() => this.hideDistractions(), 250);
-
-    this.observer = new MutationObserver(debouncedHide);
-    this.observer.observe(document.body, {
-      childList: true,
-      subtree: true
+  setupMessageListener() {
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      if (request.action === 'toggleDistractions') {
+        this.handleToggleDistractions(request.show).then(sendResponse);
+        return true;
+      }
+      return false;
     });
   }
 
-  cleanup() {
-    if (this.observer) {
-      this.observer.disconnect();
+  async handleToggleDistractions(show) {
+    try {
+      if (show) {
+        await this.page.showDistractions();
+      } else {
+        await this.page.hideDistractions();
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Bookcover: Error toggling distractions:', error);
+      return { success: false, error: error.message };
     }
-    PatternDetectionService.stopObserving();
   }
 }
 
-// Initialize the extension
-const bookcover = new Bookcover();
-bookcover.initialize().catch(console.error);
-
-// Cleanup when the page is unloaded
-window.addEventListener('unload', () => {
-  bookcover.cleanup();
+// Initialize the content script
+const contentScript = new ContentScript();
+contentScript.initialize().catch((error) => {
+  console.error('Bookcover: Failed to initialize content script:', error);
+});
 });

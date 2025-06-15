@@ -35,15 +35,15 @@ class FacebookPage {
   }
 
   async isFeedHidden() {
-    return await this.feed.isHidden();
+    return this.feed.isHidden();
   }
 
   async isReelsHidden() {
-    return await this.reels.isHidden();
+    return this.reels.isHidden();
   }
 
   async isStoriesHidden() {
-    return await this.stories.isHidden();
+    return this.stories.isHidden();
   }
 }
 

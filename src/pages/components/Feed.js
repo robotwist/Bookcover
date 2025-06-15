@@ -1,55 +1,69 @@
 import ConfigService from '../../services/ConfigService';
-import { safeExecute } from '../../utils/helpers';
+import PatternDetectionService from '../../services/PatternDetectionService';
 
 /**
- * Feed - Component for handling Facebook feed elements
+ * Feed - Component for managing Facebook feed
+ * Handles feed-specific interactions and state
  */
 class Feed {
   constructor() {
-    this.selectors = null;
-    this.initializeSelectors();
+    this.config = ConfigService.getInstance();
+    this.patternDetection = PatternDetectionService.getInstance();
+    this.feedSelector = this.config.getSelector('feed');
+    this.feedContainer = null;
   }
 
-  async initializeSelectors() {
-    const config = await ConfigService.getConfig();
-    this.selectors = config.selectors.feed;
+  async initialize() {
+    try {
+      this.feedContainer = await this.patternDetection.findElement(this.feedSelector);
+      return true;
+    } catch (error) {
+      console.error('Bookcover: Error initializing feed:', error);
+      return false;
+    }
   }
 
   async hide() {
-    return await safeExecute(async () => {
-      await this.ensureSelectors();
-      const elements = await this.findElements();
-      elements.forEach(el => {
-        el.style.display = 'none';
-      });
-      return true;
-    }, 'Feed: Error hiding elements');
+    try {
+      if (!this.feedContainer) {
+        await this.initialize();
+      }
+      if (this.feedContainer) {
+        this.feedContainer.style.display = 'none';
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Bookcover: Error hiding feed:', error);
+      return false;
+    }
+  }
+
+  async show() {
+    try {
+      if (!this.feedContainer) {
+        await this.initialize();
+      }
+      if (this.feedContainer) {
+        this.feedContainer.style.display = 'block';
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Bookcover: Error showing feed:', error);
+      return false;
+    }
   }
 
   async isHidden() {
-    return await safeExecute(async () => {
-      await this.ensureSelectors();
-      const elements = await this.findElements();
-      if (elements.length === 0) {
-        return false;
+    try {
+      if (!this.feedContainer) {
+        await this.initialize();
       }
-      return elements.every(el => el.style.display === 'none');
-    }, 'Feed: Error checking hidden state');
-  }
-
-  async findElements() {
-    await this.ensureSelectors();
-    const elements = [];
-    for (const selector of Object.values(this.selectors)) {
-      const found = document.querySelectorAll(selector);
-      elements.push(...found);
-    }
-    return elements;
-  }
-
-  async ensureSelectors() {
-    if (!this.selectors) {
-      await this.initializeSelectors();
+      return this.feedContainer?.style.display === 'none';
+    } catch (error) {
+      console.error('Bookcover: Error checking feed visibility:', error);
+      return false;
     }
   }
 }

@@ -1,66 +1,48 @@
 /**
- * ConfigService - Manages configuration and selectors for the extension
+ * ConfigService - Singleton service for managing configuration
+ * Handles loading and accessing configuration data
  */
 class ConfigService {
   constructor() {
+    if (ConfigService.instance) {
+      return ConfigService.instance;
+    }
     this.config = null;
-    this.lastUpdate = null;
-    this.UPDATE_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
+    ConfigService.instance = this;
   }
 
-  async getConfig() {
-    if (!this.config || this.shouldUpdate()) {
-      await this.updateConfig();
+  static getInstance() {
+    if (!ConfigService.instance) {
+      ConfigService.instance = new ConfigService();
+    }
+    return ConfigService.instance;
+  }
+
+  async loadConfig() {
+    try {
+      const response = await fetch(chrome.runtime.getURL('config.json'));
+      this.config = await response.json();
+      return true;
+    } catch (error) {
+      console.error('Bookcover: Error loading config:', error);
+      return false;
+    }
+  }
+
+  getSelector(key) {
+    if (!this.config) {
+      throw new Error('Config not loaded');
+    }
+    return this.config.selectors[key];
+  }
+
+  getConfig() {
+    if (!this.config) {
+      throw new Error('Config not loaded');
     }
     return this.config;
   }
-
-  async updateConfig() {
-    try {
-      const response = await chrome.storage.sync.get(['selectors', 'keywords']);
-      this.config = response;
-      this.lastUpdate = Date.now();
-    } catch (error) {
-      console.error('ConfigService: Failed to update config:', error);
-      // Fallback to default config
-      this.config = this.getDefaultConfig();
-    }
-  }
-
-  shouldUpdate() {
-    return !this.lastUpdate || (Date.now() - this.lastUpdate > this.UPDATE_INTERVAL);
-  }
-
-  getDefaultConfig() {
-    return {
-      selectors: {
-        feed: {
-          main: '[role="feed"]',
-          feedUnit: 'div[data-pagelet^="FeedUnit_"]',
-          sponsored: '[aria-label="Sponsored"]',
-        },
-        reels: {
-          main: 'div[aria-label="Reels"]',
-          link: 'a[href*="reels"]',
-          container: 'div[data-pagelet="Reels"]',
-        },
-        stories: {
-          main: '[aria-label="Stories"]',
-          create: '[aria-label="Create a story"]',
-          container: 'div[data-pagelet="Stories"]',
-        },
-      },
-      keywords: [
-        'Sponsored',
-        'Reels',
-        'Suggested for You',
-        'Watch',
-        'Stories',
-        'Marketplace',
-        'Gaming',
-      ],
-    };
-  }
 }
 
-export default new ConfigService();
+export default ConfigService;
+

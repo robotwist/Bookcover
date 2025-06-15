@@ -1,55 +1,69 @@
 import ConfigService from '../../services/ConfigService';
-import { safeExecute } from '../../utils/helpers';
+import PatternDetectionService from '../../services/PatternDetectionService';
 
 /**
- * Reels - Component for handling Facebook Reels elements
+ * Reels - Component for managing Facebook reels
+ * Handles reels-specific interactions and state
  */
 class Reels {
   constructor() {
-    this.selectors = null;
-    this.initializeSelectors();
+    this.config = ConfigService.getInstance();
+    this.patternDetection = PatternDetectionService.getInstance();
+    this.reelsSelector = this.config.getSelector('reels');
+    this.reelsContainer = null;
   }
 
-  async initializeSelectors() {
-    const config = await ConfigService.getConfig();
-    this.selectors = config.selectors.reels;
+  async initialize() {
+    try {
+      this.reelsContainer = await this.patternDetection.findElement(this.reelsSelector);
+      return true;
+    } catch (error) {
+      console.error('Bookcover: Error initializing reels:', error);
+      return false;
+    }
   }
 
   async hide() {
-    return await safeExecute(async () => {
-      await this.ensureSelectors();
-      const elements = await this.findElements();
-      elements.forEach(el => {
-        el.style.display = 'none';
-      });
-      return true;
-    }, 'Reels: Error hiding elements');
+    try {
+      if (!this.reelsContainer) {
+        await this.initialize();
+      }
+      if (this.reelsContainer) {
+        this.reelsContainer.style.display = 'none';
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Bookcover: Error hiding reels:', error);
+      return false;
+    }
+  }
+
+  async show() {
+    try {
+      if (!this.reelsContainer) {
+        await this.initialize();
+      }
+      if (this.reelsContainer) {
+        this.reelsContainer.style.display = 'block';
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Bookcover: Error showing reels:', error);
+      return false;
+    }
   }
 
   async isHidden() {
-    return await safeExecute(async () => {
-      await this.ensureSelectors();
-      const elements = await this.findElements();
-      if (elements.length === 0) {
-        return false;
+    try {
+      if (!this.reelsContainer) {
+        await this.initialize();
       }
-      return elements.every(el => el.style.display === 'none');
-    }, 'Reels: Error checking hidden state');
-  }
-
-  async findElements() {
-    await this.ensureSelectors();
-    const elements = [];
-    for (const selector of Object.values(this.selectors)) {
-      const found = document.querySelectorAll(selector);
-      elements.push(...found);
-    }
-    return elements;
-  }
-
-  async ensureSelectors() {
-    if (!this.selectors) {
-      await this.initializeSelectors();
+      return this.reelsContainer?.style.display === 'none';
+    } catch (error) {
+      console.error('Bookcover: Error checking reels visibility:', error);
+      return false;
     }
   }
 }
