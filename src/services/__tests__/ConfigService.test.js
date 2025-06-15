@@ -1,5 +1,12 @@
 import ConfigService from '../ConfigService';
 
+// Mock chrome API
+global.chrome = {
+  runtime: {
+    getURL: jest.fn().mockReturnValue('chrome-extension://test/config.json'),
+  },
+};
+
 describe('ConfigService', () => {
   let configService;
 

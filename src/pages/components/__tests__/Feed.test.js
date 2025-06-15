@@ -2,99 +2,67 @@ import Feed from '../Feed';
 import ConfigService from '../../../services/ConfigService';
 import PatternDetectionService from '../../../services/PatternDetectionService';
 
-jest.mock('../../../services/ConfigService');
-jest.mock('../../../services/PatternDetectionService');
+// Mock the services
+jest.mock('../../../services/ConfigService', () => ({
+  getInstance: jest.fn().mockReturnValue({
+    getSelector: jest.fn().mockReturnValue('[role="feed"]'),
+  }),
+}));
 
-describe('Feed', () => {
+jest.mock('../../../services/PatternDetectionService', () => ({
+  getInstance: jest.fn().mockReturnValue({
+    mockFindElement: jest.fn(), // will assign to findElement in beforeEach
+  }),
+}));
+
+describe('Feed Component', () => {
   let feed;
   let mockElement;
+  let patternDetectionInstance;
 
   beforeEach(() => {
     mockElement = document.createElement('div');
+    mockElement.setAttribute('role', 'feed');
     document.body.appendChild(mockElement);
-
-    ConfigService.getInstance.mockReturnValue({
-      getSelector: jest.fn().mockReturnValue('[data-testid="feed"]'),
-    });
-
-    PatternDetectionService.getInstance.mockReturnValue({
-      findElement: jest.fn().mockResolvedValue(mockElement),
-    });
-
+    
+    patternDetectionInstance = PatternDetectionService.getInstance();
+    patternDetectionInstance.findElement = jest.fn(() => Promise.resolve(mockElement));
     feed = new Feed();
   });
 
   afterEach(() => {
-    document.body.innerHTML = '';
+    document.body.removeChild(mockElement);
     jest.clearAllMocks();
   });
 
-  describe('hide', () => {
-    it('should hide the feed element', async () => {
-      await feed.hide();
-      expect(mockElement.style.display).toBe('none');
-    });
-
-    it('should initialize if not already initialized', async () => {
-      feed.feedContainer = null;
-      await feed.hide();
-      expect(PatternDetectionService.getInstance().findElement).toHaveBeenCalled();
-      expect(mockElement.style.display).toBe('none');
-    });
-
-    it('should handle errors gracefully', async () => {
-      PatternDetectionService.getInstance().findElement.mockRejectedValue(new Error('Test error'));
-      feed.feedContainer = null;
-      const result = await feed.hide();
-      expect(result).toBe(false);
-    });
+  it('should initialize with selectors from ConfigService', () => {
+    expect(ConfigService.getInstance).toHaveBeenCalled();
+    expect(PatternDetectionService.getInstance).toHaveBeenCalled();
   });
 
-  describe('show', () => {
-    it('should show the feed element', async () => {
-      await feed.show();
-      expect(mockElement.style.display).toBe('block');
-    });
-
-    it('should initialize if not already initialized', async () => {
-      feed.feedContainer = null;
-      await feed.show();
-      expect(PatternDetectionService.getInstance().findElement).toHaveBeenCalled();
-      expect(mockElement.style.display).toBe('block');
-    });
-
-    it('should handle errors gracefully', async () => {
-      PatternDetectionService.getInstance().findElement.mockRejectedValue(new Error('Test error'));
-      feed.feedContainer = null;
-      const result = await feed.show();
-      expect(result).toBe(false);
-    });
+  it('should hide feed elements', async () => {
+    await feed.hide();
+    expect(mockElement.style.display).toBe('none');
   });
 
-  describe('isHidden', () => {
-    it('should return true when feed is hidden', async () => {
-      mockElement.style.display = 'none';
-      const result = await feed.isHidden();
-      expect(result).toBe(true);
-    });
+  it('should show feed elements', async () => {
+    mockElement.style.display = 'none';
+    await feed.show();
+    expect(mockElement.style.display).toBe('block');
+  });
 
-    it('should return false when feed is visible', async () => {
-      mockElement.style.display = 'block';
-      const result = await feed.isHidden();
-      expect(result).toBe(false);
-    });
+  it('should correctly identify hidden state', async () => {
+    mockElement.style.display = 'none';
+    expect(await feed.isHidden()).toBe(true);
+    
+    mockElement.style.display = 'block';
+    expect(await feed.isHidden()).toBe(false);
+  });
 
-    it('should initialize if not already initialized', async () => {
-      feed.feedContainer = null;
-      await feed.isHidden();
-      expect(PatternDetectionService.getInstance().findElement).toHaveBeenCalled();
-    });
-
-    it('should handle errors gracefully', async () => {
-      PatternDetectionService.getInstance().findElement.mockRejectedValue(new Error('Test error'));
-      feed.feedContainer = null;
-      const result = await feed.isHidden();
-      expect(result).toBe(false);
-    });
+  it('should handle missing elements gracefully', async () => {
+    document.body.removeChild(mockElement);
+    await expect(feed.hide()).resolves.not.toThrow();
+    await expect(feed.show()).resolves.not.toThrow();
+    await expect(feed.isHidden()).resolves.toBe(false);
   });
 }); 

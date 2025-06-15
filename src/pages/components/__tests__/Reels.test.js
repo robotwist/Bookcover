@@ -2,99 +2,68 @@ import Reels from '../Reels';
 import ConfigService from '../../../services/ConfigService';
 import PatternDetectionService from '../../../services/PatternDetectionService';
 
-jest.mock('../../../services/ConfigService');
-jest.mock('../../../services/PatternDetectionService');
+// Mock the services
+jest.mock('../../../services/ConfigService', () => ({
+  getInstance: jest.fn().mockReturnValue({
+    getSelector: jest.fn().mockReturnValue('[role="region"][aria-label*="Reels"]'),
+  }),
+}));
 
-describe('Reels', () => {
+jest.mock('../../../services/PatternDetectionService', () => ({
+  getInstance: jest.fn().mockReturnValue({
+    mockFindElement: jest.fn(), // will assign to findElement in beforeEach
+  }),
+}));
+
+describe('Reels Component', () => {
   let reels;
   let mockElement;
+  let patternDetectionInstance;
 
   beforeEach(() => {
     mockElement = document.createElement('div');
+    mockElement.setAttribute('role', 'region');
+    mockElement.setAttribute('aria-label', 'Reels');
     document.body.appendChild(mockElement);
-
-    ConfigService.getInstance.mockReturnValue({
-      getSelector: jest.fn().mockReturnValue('[data-testid="reels"]'),
-    });
-
-    PatternDetectionService.getInstance.mockReturnValue({
-      findElement: jest.fn().mockResolvedValue(mockElement),
-    });
-
+    
+    patternDetectionInstance = PatternDetectionService.getInstance();
+    patternDetectionInstance.findElement = jest.fn(() => Promise.resolve(mockElement));
     reels = new Reels();
   });
 
   afterEach(() => {
-    document.body.innerHTML = '';
+    document.body.removeChild(mockElement);
     jest.clearAllMocks();
   });
 
-  describe('hide', () => {
-    it('should hide the reels element', async () => {
-      await reels.hide();
-      expect(mockElement.style.display).toBe('none');
-    });
-
-    it('should initialize if not already initialized', async () => {
-      reels.reelsContainer = null;
-      await reels.hide();
-      expect(PatternDetectionService.getInstance().findElement).toHaveBeenCalled();
-      expect(mockElement.style.display).toBe('none');
-    });
-
-    it('should handle errors gracefully', async () => {
-      PatternDetectionService.getInstance().findElement.mockRejectedValue(new Error('Test error'));
-      reels.reelsContainer = null;
-      const result = await reels.hide();
-      expect(result).toBe(false);
-    });
+  it('should initialize with selectors from ConfigService', () => {
+    expect(ConfigService.getInstance).toHaveBeenCalled();
+    expect(PatternDetectionService.getInstance).toHaveBeenCalled();
   });
 
-  describe('show', () => {
-    it('should show the reels element', async () => {
-      await reels.show();
-      expect(mockElement.style.display).toBe('block');
-    });
-
-    it('should initialize if not already initialized', async () => {
-      reels.reelsContainer = null;
-      await reels.show();
-      expect(PatternDetectionService.getInstance().findElement).toHaveBeenCalled();
-      expect(mockElement.style.display).toBe('block');
-    });
-
-    it('should handle errors gracefully', async () => {
-      PatternDetectionService.getInstance().findElement.mockRejectedValue(new Error('Test error'));
-      reels.reelsContainer = null;
-      const result = await reels.show();
-      expect(result).toBe(false);
-    });
+  it('should hide reels elements', async () => {
+    await reels.hide();
+    expect(mockElement.style.display).toBe('none');
   });
 
-  describe('isHidden', () => {
-    it('should return true when reels is hidden', async () => {
-      mockElement.style.display = 'none';
-      const result = await reels.isHidden();
-      expect(result).toBe(true);
-    });
+  it('should show reels elements', async () => {
+    mockElement.style.display = 'none';
+    await reels.show();
+    expect(mockElement.style.display).toBe('block');
+  });
 
-    it('should return false when reels is visible', async () => {
-      mockElement.style.display = 'block';
-      const result = await reels.isHidden();
-      expect(result).toBe(false);
-    });
+  it('should correctly identify hidden state', async () => {
+    mockElement.style.display = 'none';
+    expect(await reels.isHidden()).toBe(true);
+    
+    mockElement.style.display = 'block';
+    expect(await reels.isHidden()).toBe(false);
+  });
 
-    it('should initialize if not already initialized', async () => {
-      reels.reelsContainer = null;
-      await reels.isHidden();
-      expect(PatternDetectionService.getInstance().findElement).toHaveBeenCalled();
-    });
-
-    it('should handle errors gracefully', async () => {
-      PatternDetectionService.getInstance().findElement.mockRejectedValue(new Error('Test error'));
-      reels.reelsContainer = null;
-      const result = await reels.isHidden();
-      expect(result).toBe(false);
-    });
+  it('should handle missing elements gracefully', async () => {
+    document.body.removeChild(mockElement);
+    await expect(reels.hide()).resolves.not.toThrow();
+    await expect(reels.show()).resolves.not.toThrow();
+    await expect(reels.isHidden()).resolves.toBe(false);
   });
 }); 

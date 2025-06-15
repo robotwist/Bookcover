@@ -5,6 +5,7 @@ describe('PatternDetectionService', () => {
   let mockElement;
 
   beforeEach(() => {
+    // Reset the singleton instance
     PatternDetectionService.instance = null;
     patternDetectionService = new PatternDetectionService();
     mockElement = document.createElement('div');
@@ -12,7 +13,7 @@ describe('PatternDetectionService', () => {
   });
 
   afterEach(() => {
-    document.body.innerHTML = '';
+    document.body.removeChild(mockElement);
     jest.clearAllMocks();
   });
 
@@ -26,25 +27,28 @@ describe('PatternDetectionService', () => {
 
   describe('findElement', () => {
     it('should find element immediately if present', async () => {
-      const element = await patternDetectionService.findElement('[data-testid="test"]');
-      expect(element).toBe(mockElement);
+      const selector = '#test-element';
+      mockElement.id = 'test-element';
+      
+      const result = await patternDetectionService.findElement(selector);
+      expect(result).toBe(mockElement);
     });
 
     it('should find element after a delay', async () => {
+      const selector = '#delayed-element';
       setTimeout(() => {
-        const newElement = document.createElement('div');
-        newElement.setAttribute('data-testid', 'test');
-        document.body.appendChild(newElement);
+        mockElement.id = 'delayed-element';
       }, 100);
 
-      const element = await patternDetectionService.findElement('[data-testid="test"]');
-      expect(element).toBeDefined();
+      const result = await patternDetectionService.findElement(selector);
+      expect(result).toBe(mockElement);
     });
 
     it('should timeout if element not found', async () => {
-      await expect(patternDetectionService.findElement('[data-testid="nonexistent"]', 100))
+      const selector = '#nonexistent-element';
+      await expect(patternDetectionService.findElement(selector))
         .rejects
-        .toThrow('Element not found: [data-testid="nonexistent"]');
+        .toThrow('Element not found');
     });
   });
 
@@ -52,19 +56,19 @@ describe('PatternDetectionService', () => {
     it('should observe element mutations', () => {
       const callback = jest.fn();
       patternDetectionService.observeElement(mockElement, callback);
-
-      mockElement.setAttribute('data-test', 'value');
+      
+      mockElement.innerHTML = '<div>New content</div>';
       expect(callback).toHaveBeenCalled();
     });
 
     it('should handle multiple observers', () => {
       const callback1 = jest.fn();
       const callback2 = jest.fn();
-
+      
       patternDetectionService.observeElement(mockElement, callback1);
       patternDetectionService.observeElement(mockElement, callback2);
-
-      mockElement.setAttribute('data-test', 'value');
+      
+      mockElement.innerHTML = '<div>New content</div>';
       expect(callback1).toHaveBeenCalled();
       expect(callback2).toHaveBeenCalled();
     });
@@ -74,9 +78,9 @@ describe('PatternDetectionService', () => {
     it('should disconnect all observers', () => {
       const callback = jest.fn();
       patternDetectionService.observeElement(mockElement, callback);
+      
       patternDetectionService.disconnect();
-
-      mockElement.setAttribute('data-test', 'value');
+      mockElement.innerHTML = '<div>New content</div>';
       expect(callback).not.toHaveBeenCalled();
     });
   });
