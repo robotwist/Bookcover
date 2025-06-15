@@ -1,12 +1,12 @@
 /**
- * Reels - Component for handling Facebook Reels elements
+ * Stories - Component for handling Facebook Stories elements
  */
-class Reels {
+class Stories {
   constructor() {
     this.selectors = {
-      main: 'div[aria-label="Reels"]',
-      link: 'a[href*="reels"]',
-      container: 'div[data-pagelet="Reels"]'
+      main: '[aria-label="Stories"]',
+      create: '[aria-label="Create a story"]',
+      container: 'div[data-pagelet="Stories"]'
     };
   }
 
@@ -18,7 +18,7 @@ class Reels {
       });
       return true;
     } catch (error) {
-      console.error('Reels: Error hiding elements:', error);
+      console.error('Stories: Error hiding elements:', error);
       return false;
     }
   }
@@ -31,7 +31,7 @@ class Reels {
       }
       return elements.every(el => el.style.display === 'none');
     } catch (error) {
-      console.error('Reels: Error checking hidden state:', error);
+      console.error('Stories: Error checking hidden state:', error);
       return false;
     }
   }
@@ -46,4 +46,4 @@ class Reels {
   }
 }
 
-export default Reels; 
+export default Stories; 

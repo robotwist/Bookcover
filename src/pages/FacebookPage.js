@@ -1,5 +1,6 @@
 import Feed from './components/Feed';
 import Reels from './components/Reels';
+import Stories from './components/Stories';
 
 /**
  * FacebookPage - Main page object for Facebook
@@ -16,14 +17,15 @@ class FacebookPage {
   initializeComponents() {
     this.feed = new Feed();
     this.reels = new Reels();
-    // We'll implement Stories in the next step
+    this.stories = new Stories();
   }
 
   async hideDistractions() {
     try {
       await Promise.all([
         this.feed.hide(),
-        this.reels.hide()
+        this.reels.hide(),
+        this.stories.hide()
       ]);
       console.log('Bookcover: Distractions hidden successfully');
     } catch (error) {
@@ -38,6 +40,10 @@ class FacebookPage {
 
   async isReelsHidden() {
     return await this.reels.isHidden();
+  }
+
+  async isStoriesHidden() {
+    return await this.stories.isHidden();
   }
 }
 

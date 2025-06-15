@@ -26,6 +26,9 @@ class Feed {
   async isHidden() {
     try {
       const elements = await this.findElements();
+      if (elements.length === 0) {
+        return false;
+      }
       return elements.every(el => el.style.display === 'none');
     } catch (error) {
       console.error('Feed: Error checking hidden state:', error);
