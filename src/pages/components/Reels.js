@@ -1,48 +1,56 @@
+import ConfigService from '../../services/ConfigService';
+import { safeExecute } from '../../utils/helpers';
+
 /**
  * Reels - Component for handling Facebook Reels elements
  */
 class Reels {
   constructor() {
-    this.selectors = {
-      main: 'div[aria-label="Reels"]',
-      link: 'a[href*="reels"]',
-      container: 'div[data-pagelet="Reels"]'
-    };
+    this.selectors = null;
+    this.initializeSelectors();
+  }
+
+  async initializeSelectors() {
+    const config = await ConfigService.getConfig();
+    this.selectors = config.selectors.reels;
   }
 
   async hide() {
-    try {
+    return await safeExecute(async () => {
+      await this.ensureSelectors();
       const elements = await this.findElements();
       elements.forEach(el => {
         el.style.display = 'none';
       });
       return true;
-    } catch (error) {
-      console.error('Reels: Error hiding elements:', error);
-      return false;
-    }
+    }, 'Reels: Error hiding elements');
   }
 
   async isHidden() {
-    try {
+    return await safeExecute(async () => {
+      await this.ensureSelectors();
       const elements = await this.findElements();
       if (elements.length === 0) {
         return false;
       }
       return elements.every(el => el.style.display === 'none');
-    } catch (error) {
-      console.error('Reels: Error checking hidden state:', error);
-      return false;
-    }
+    }, 'Reels: Error checking hidden state');
   }
 
   async findElements() {
+    await this.ensureSelectors();
     const elements = [];
     for (const selector of Object.values(this.selectors)) {
       const found = document.querySelectorAll(selector);
       elements.push(...found);
     }
     return elements;
+  }
+
+  async ensureSelectors() {
+    if (!this.selectors) {
+      await this.initializeSelectors();
+    }
   }
 }
 
