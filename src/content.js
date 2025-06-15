@@ -1,5 +1,8 @@
-import FacebookPage from './pages/FacebookPage';
 import ConfigService from './services/ConfigService';
+import PatternDetectionService from './services/PatternDetectionService';
+import Feed from './pages/components/Feed';
+import Stories from './pages/components/Stories';
+import FacebookPage from './pages/FacebookPage';
 
 /**
  * Main content script for the Bookcover extension
@@ -7,17 +10,26 @@ import ConfigService from './services/ConfigService';
  */
 class ContentScript {
   constructor() {
-    this.page = null;
-    this.config = null;
+    this.configService = ConfigService.getInstance();
+    this.patternDetectionService = PatternDetectionService.getInstance();
+    this.feed = new Feed();
+    this.stories = new Stories();
+    this.page = new FacebookPage(this.feed, this.stories);
   }
 
   async initialize() {
     try {
-      this.config = ConfigService.getInstance();
-      await this.config.loadConfig();
-      this.page = new FacebookPage();
-      await this.page.hideDistractions();
+      // Load configuration
+      await this.configService.loadConfig();
+      
+      // Initialize pattern detection
+      await this.patternDetectionService.initialize();
+      
+      // Initialize Facebook page components
+      await this.page.initialize();
+      
       this.setupMessageListener();
+      console.log('Bookcover initialized successfully');
       return true;
     } catch (error) {
       console.error('Bookcover: Error initializing content script:', error);
@@ -50,9 +62,10 @@ class ContentScript {
   }
 }
 
-// Initialize the content script
+// Initialize the content script when the page is ready
 const contentScript = new ContentScript();
-contentScript.initialize().catch((error) => {
-  console.error('Bookcover: Failed to initialize content script:', error);
-});
-});
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => contentScript.initialize());
+} else {
+  contentScript.initialize();
+}

@@ -5,6 +5,10 @@
   "description": "Strip Facebook down to the essentials. No feed, no reels, no distractions.",
   "permissions": ["scripting", "storage", "activeTab"],
   "host_permissions": ["https://www.facebook.com/*"],
+  "web_accessible_resources": [{
+    "resources": ["config.json"],
+    "matches": ["https://www.facebook.com/*"]
+  }],
   "action": {
     "default_title": "Bookcover is active"
   },

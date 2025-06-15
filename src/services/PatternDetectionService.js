@@ -24,6 +24,28 @@ class PatternDetectionService {
   }
 
   /**
+   * Initialize the pattern detection service
+   * @returns {Promise<void>}
+   */
+  async initialize() {
+    try {
+      // Clear any existing patterns and observers
+      this.knownPatterns.clear();
+      this.observationCount.clear();
+      this.stopObserving();
+
+      // Start observing DOM changes
+      this.startObserving();
+      
+      console.log('Bookcover: Pattern detection initialized');
+      return true;
+    } catch (error) {
+      console.error('Bookcover: Error initializing pattern detection:', error);
+      return false;
+    }
+  }
+
+  /**
    * Find an element in the DOM, waiting for it to appear if necessary
    * @param {string} selector - The CSS selector to find the element
    * @param {number} timeout - Maximum time to wait in milliseconds

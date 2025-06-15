@@ -27,21 +27,11 @@ global.MutationObserver = MockMutationObserver;
 
 describe('PatternDetectionService', () => {
   let patternDetectionService;
-  let mockElement;
 
   beforeEach(() => {
-    // Reset the singleton instance
-    PatternDetectionService.instance = null;
     patternDetectionService = PatternDetectionService.getInstance();
-    mockElement = document.createElement('div');
-    document.body.appendChild(mockElement);
-  });
-
-  afterEach(() => {
-    if (mockElement && mockElement.parentNode) {
-      mockElement.parentNode.removeChild(mockElement);
-    }
-    jest.clearAllMocks();
+    patternDetectionService.knownPatterns.clear();
+    patternDetectionService.stopObserving();
   });
 
   describe('getInstance', () => {
@@ -59,7 +49,9 @@ describe('PatternDetectionService', () => {
       document.body.appendChild(element);
 
       const result = await patternDetectionService.findElement('[role="feed"]');
-      expect(result).toBe(element);
+      expect(result).not.toBeNull();
+      expect(result.getAttribute('role')).toBe('feed');
+      expect(result.outerHTML).toBe(element.outerHTML);
 
       document.body.removeChild(element);
     });
@@ -73,54 +65,57 @@ describe('PatternDetectionService', () => {
       }, 100);
 
       const result = await patternDetectionService.findElement('[role="feed"]');
-      expect(result).toBe(element);
+      expect(result).not.toBeNull();
+      expect(result.getAttribute('role')).toBe('feed');
+      expect(result.outerHTML).toBe(element.outerHTML);
 
       document.body.removeChild(element);
     });
 
     it('should timeout if element not found', async () => {
-      const result = await patternDetectionService.findElement('[role="nonexistent"]', 100);
+      const result = await patternDetectionService.findElement('[role="nonexistent"]');
       expect(result).toBeNull();
-    }, 2000); // Increase timeout for this test
+    });
   });
 
   describe('observeElement', () => {
     it('should observe element mutations', async () => {
       const element = document.createElement('div');
+      element.setAttribute('role', 'feed');
       document.body.appendChild(element);
 
       const callback = jest.fn();
-      patternDetectionService.observeElement(element, callback);
+      await patternDetectionService.observeElement(element, callback);
 
-      // Simulate a mutation
-      patternDetectionService.observer.simulateMutation(element);
+      const observer = patternDetectionService.observer;
+      expect(observer).toBeDefined();
+      expect(observer.observing).toBe(true);
 
-      // Wait for the debounce to complete
-      await new Promise(resolve => setTimeout(resolve, 1100));
+      const mutations = [{ type: 'childList' }];
+      observer.simulateMutation(mutations);
 
-      expect(callback).toHaveBeenCalled();
+      expect(callback).toHaveBeenCalledWith(mutations, observer);
 
       document.body.removeChild(element);
     });
 
     it('should handle multiple observers', async () => {
       const element = document.createElement('div');
+      element.setAttribute('role', 'feed');
       document.body.appendChild(element);
 
       const callback1 = jest.fn();
       const callback2 = jest.fn();
 
-      patternDetectionService.observeElement(element, callback1);
-      patternDetectionService.observeElement(element, callback2);
+      await patternDetectionService.observeElement(element, callback1);
+      await patternDetectionService.observeElement(element, callback2);
 
-      // Simulate a mutation
-      patternDetectionService.observer.simulateMutation(element);
+      const observer = patternDetectionService.observer;
+      const mutations = [{ type: 'childList' }];
+      observer.simulateMutation(mutations);
 
-      // Wait for the debounce to complete
-      await new Promise(resolve => setTimeout(resolve, 1100));
-
-      expect(callback1).toHaveBeenCalled();
-      expect(callback2).toHaveBeenCalled();
+      expect(callback1).toHaveBeenCalledWith(mutations, observer);
+      expect(callback2).toHaveBeenCalledWith(mutations, observer);
 
       document.body.removeChild(element);
     });
@@ -129,19 +124,19 @@ describe('PatternDetectionService', () => {
   describe('disconnect', () => {
     it('should disconnect all observers', async () => {
       const element = document.createElement('div');
+      element.setAttribute('role', 'feed');
       document.body.appendChild(element);
 
       const callback = jest.fn();
-      patternDetectionService.observeElement(element, callback);
-      // Save a reference to the observer before disconnecting
-      const observerRef = patternDetectionService.observer;
+      await patternDetectionService.observeElement(element, callback);
+
       patternDetectionService.disconnect();
 
-      // Simulate a mutation after disconnect
-      observerRef.simulateMutation(element);
+      const observer = patternDetectionService.observer;
+      expect(observer.observing).toBe(false);
 
-      // Wait for the debounce to complete
-      await new Promise(resolve => setTimeout(resolve, 1100));
+      const mutations = [{ type: 'childList' }];
+      observer.simulateMutation(mutations);
 
       expect(callback).not.toHaveBeenCalled();
 

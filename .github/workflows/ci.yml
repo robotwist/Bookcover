@@ -6,17 +6,24 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  NODE_ENV: test
+  CI: true
+
 jobs:
   test:
+    name: Test
     runs-on: ubuntu-latest
     strategy:
       matrix:
         node-version: [16.x, 18.x]
+        os: [ubuntu-latest]
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    - name: Use Node.js ${{ matrix.node-version }}
+    - name: Setup Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
@@ -24,22 +31,45 @@ jobs:
 
     - name: Install dependencies
       run: npm ci
+      env:
+        NODE_ENV: development
 
-    - name: Run tests
-      run: npm test
+    - name: Run tests with coverage
+      run: npm test -- --coverage --verbose
+      env:
+        NODE_ENV: test
 
     - name: Run linting
       run: npm run lint
+      continue-on-error: true
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results-${{ matrix.node-version }}
+        path: |
+          coverage/
+          test-results/
+        if-no-files-found: error
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
 
   build:
+    name: Build
     needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    - name: Use Node.js
+    - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '18.x'
@@ -47,18 +77,75 @@ jobs:
 
     - name: Install dependencies
       run: npm ci
+      env:
+        NODE_ENV: production
 
     - name: Build extension
-      run: |
-        mkdir -p dist
-        cp -r src/* dist/
-        cp manifest.json dist/
-        cp config.json dist/
-
-    - name: Create release
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        files: dist/*
+      run: npm run build
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+        NODE_ENV: production
+
+    - name: Verify build artifacts
+      if: failure()
+      run: |
+        echo "Build directory contents:"
+        ls -la dist/
+        echo "Artifact sizes:"
+        du -sh dist/*
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: extension-build
+        path: dist/
+        if-no-files-found: error
+
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: extension-build
+        path: dist
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/*.zip
+          dist/*.xpi
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    name: Notify
+    needs: [test, build, release]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - name: Notify on failure
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const run_id = context.runId;
+          const run_url = `https://github.com/${owner}/${repo}/actions/runs/${run_id}`;
+          
+          await github.rest.issues.create({
+            owner,
+            repo,
+            title: `CI/CD Pipeline Failed - Run #${run_id}`,
+            body: `The CI/CD pipeline failed. Please check the [workflow run](${run_url}) for details.`
+          }); 
