@@ -13,6 +13,7 @@ class PatternDetectionService {
     this.observer = null;
     this.callbacks = new Set();
     this.DETECTION_THRESHOLD = 3; // Number of observations before considering a pattern valid
+    this.initialized = false;
     PatternDetectionService.instance = this;
   }
 
@@ -29,6 +30,10 @@ class PatternDetectionService {
    */
   async initialize() {
     try {
+      if (this.initialized) {
+        return true;
+      }
+
       // Clear any existing patterns and observers
       this.knownPatterns.clear();
       this.observationCount.clear();
@@ -37,10 +42,12 @@ class PatternDetectionService {
       // Start observing DOM changes
       this.startObserving();
       
+      this.initialized = true;
       console.log('Bookcover: Pattern detection initialized');
       return true;
     } catch (error) {
       console.error('Bookcover: Error initializing pattern detection:', error);
+      this.initialized = false;
       return false;
     }
   }
@@ -52,17 +59,25 @@ class PatternDetectionService {
    * @returns {Promise<Element|null>} - The found element or null if not found
    */
   async findElement(selector, timeout = 5000) {
-    const startTime = Date.now();
-    
-    while (Date.now() - startTime < timeout) {
-      const element = document.querySelector(selector);
-      if (element) {
-        return element;
-      }
-      await new Promise(resolve => setTimeout(resolve, 100));
+    if (!this.initialized) {
+      throw new Error('PatternDetectionService not initialized');
     }
-    
-    return null;
+    try {
+      const startTime = Date.now();
+      
+      while (Date.now() - startTime < timeout) {
+        const element = document.querySelector(selector);
+        if (element) {
+          return element;
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      throw new Error(`Element not found for selector: ${selector}`);
+    } catch (error) {
+      console.error('Bookcover: Error finding element:', error);
+      throw error;
+    }
   }
 
   /**

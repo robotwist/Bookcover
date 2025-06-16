@@ -13,6 +13,7 @@ describe('ConfigService', () => {
   beforeEach(() => {
     ConfigService.instance = null;
     configService = new ConfigService();
+    configService.config = null; // Ensure config is null before each test
   });
 
   afterEach(() => {
@@ -31,13 +32,22 @@ describe('ConfigService', () => {
     it('should load config successfully', async () => {
       const mockConfig = {
         selectors: {
-          feed: '[data-testid="feed"]',
-          reels: '[data-testid="reels"]',
-          stories: '[data-testid="stories"]',
+          feed: '[role="feed"]',
+          reels: '[role="navigation"]',
+          stories: '[role="complementary"]',
+          sponsored: '[aria-label="Sponsored"]',
+        },
+        patterns: {
+          feed: {
+            selectors: ['[role="feed"]'],
+            content: 'Content',
+            structure: [],
+          },
         },
       };
 
       global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve(mockConfig),
       });
 
@@ -59,12 +69,10 @@ describe('ConfigService', () => {
     it('should return the correct selector', () => {
       configService.config = {
         selectors: {
-          feed: '[data-testid="feed"]',
+          feed: '[role="feed"]',
         },
       };
-
-      const selector = configService.getSelector('feed');
-      expect(selector).toBe('[data-testid="feed"]');
+      expect(configService.getSelector('feed')).toBe('[role="feed"]');
     });
 
     it('should throw error if config is not loaded', () => {
@@ -76,13 +84,11 @@ describe('ConfigService', () => {
     it('should return the entire config', () => {
       const mockConfig = {
         selectors: {
-          feed: '[data-testid="feed"]',
+          feed: '[role="feed"]',
         },
       };
       configService.config = mockConfig;
-
-      const config = configService.getConfig();
-      expect(config).toEqual(mockConfig);
+      expect(configService.getConfig()).toEqual(mockConfig);
     });
 
     it('should throw error if config is not loaded', () => {

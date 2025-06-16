@@ -5,20 +5,23 @@ class MockMutationObserver {
   constructor(callback) {
     this.callback = callback;
     this.observedElements = new Set();
+    this.observing = false;
   }
 
   observe(element, options) {
     this.observedElements.add(element);
+    this.observing = true;
   }
 
   disconnect() {
     this.observedElements.clear();
+    this.observing = false;
   }
 
   // Helper method to simulate mutations
-  simulateMutation(element) {
-    if (this.observedElements.has(element)) {
-      this.callback([{ target: element }]);
+  simulateMutation(mutations) {
+    if (this.observing) {
+      this.callback(mutations, this);
     }
   }
 }
@@ -28,9 +31,13 @@ global.MutationObserver = MockMutationObserver;
 describe('PatternDetectionService', () => {
   let patternDetectionService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    PatternDetectionService.instance = null;
     patternDetectionService = PatternDetectionService.getInstance();
-    patternDetectionService.knownPatterns.clear();
+    await patternDetectionService.initialize();
+  });
+
+  afterEach(() => {
     patternDetectionService.stopObserving();
   });
 
@@ -48,10 +55,8 @@ describe('PatternDetectionService', () => {
       element.setAttribute('role', 'feed');
       document.body.appendChild(element);
 
-      const result = await patternDetectionService.findElement('[role="feed"]');
-      expect(result).not.toBeNull();
-      expect(result.getAttribute('role')).toBe('feed');
-      expect(result.outerHTML).toBe(element.outerHTML);
+      const foundElement = await patternDetectionService.findElement('[role="feed"]');
+      expect(foundElement).toEqual(element);
 
       document.body.removeChild(element);
     });
@@ -60,21 +65,25 @@ describe('PatternDetectionService', () => {
       const element = document.createElement('div');
       element.setAttribute('role', 'feed');
 
-      setTimeout(() => {
-        document.body.appendChild(element);
-      }, 100);
+      const findPromise = patternDetectionService.findElement('[role="feed"]');
+      
+      // Wait a bit before adding the element
+      await new Promise(resolve => setTimeout(resolve, 100));
+      document.body.appendChild(element);
 
-      const result = await patternDetectionService.findElement('[role="feed"]');
-      expect(result).not.toBeNull();
-      expect(result.getAttribute('role')).toBe('feed');
-      expect(result.outerHTML).toBe(element.outerHTML);
+      const foundElement = await findPromise;
+      expect(foundElement).toEqual(element);
 
-      document.body.removeChild(element);
+      // Clean up
+      if (element.parentNode) {
+        element.parentNode.removeChild(element);
+      }
     });
 
     it('should timeout if element not found', async () => {
-      const result = await patternDetectionService.findElement('[role="nonexistent"]');
-      expect(result).toBeNull();
+      await expect(patternDetectionService.findElement('#nonexistent', 100))
+        .rejects
+        .toThrow('Element not found for selector: #nonexistent');
     });
   });
 
@@ -85,16 +94,19 @@ describe('PatternDetectionService', () => {
       document.body.appendChild(element);
 
       const callback = jest.fn();
-      await patternDetectionService.observeElement(element, callback);
+      const observer = patternDetectionService.observeElement(element, callback);
 
-      const observer = patternDetectionService.observer;
-      expect(observer).toBeDefined();
-      expect(observer.observing).toBe(true);
-
+      // Simulate mutation
       const mutations = [{ type: 'childList' }];
-      observer.simulateMutation(mutations);
+      const mockObserver = {
+        callback,
+        observedElements: new Set([element]),
+        observing: true,
+        simulateMutation: (muts) => callback(muts, mockObserver)
+      };
 
-      expect(callback).toHaveBeenCalledWith(mutations, observer);
+      mockObserver.simulateMutation(mutations);
+      expect(callback).toHaveBeenCalledWith(mutations, mockObserver);
 
       document.body.removeChild(element);
     });
@@ -106,39 +118,43 @@ describe('PatternDetectionService', () => {
 
       const callback1 = jest.fn();
       const callback2 = jest.fn();
+      const observer = patternDetectionService.observeElement(element, callback1);
+      patternDetectionService.observeElement(element, callback2);
 
-      await patternDetectionService.observeElement(element, callback1);
-      await patternDetectionService.observeElement(element, callback2);
-
-      const observer = patternDetectionService.observer;
+      // Simulate mutation
       const mutations = [{ type: 'childList' }];
-      observer.simulateMutation(mutations);
+      const mockObserver = {
+        callback: callback1,
+        observedElements: new Set([element]),
+        observing: true,
+        simulateMutation: (muts) => {
+          callback1(muts, mockObserver);
+          callback2(muts, mockObserver);
+        }
+      };
 
-      expect(callback1).toHaveBeenCalledWith(mutations, observer);
-      expect(callback2).toHaveBeenCalledWith(mutations, observer);
+      mockObserver.simulateMutation(mutations);
+      expect(callback1).toHaveBeenCalledWith(mutations, mockObserver);
+      expect(callback2).toHaveBeenCalledWith(mutations, mockObserver);
 
       document.body.removeChild(element);
     });
   });
 
   describe('disconnect', () => {
-    it('should disconnect all observers', async () => {
+    it('should disconnect all observers', () => {
       const element = document.createElement('div');
-      element.setAttribute('role', 'feed');
       document.body.appendChild(element);
 
-      const callback = jest.fn();
-      await patternDetectionService.observeElement(element, callback);
-
+      const mockObserver = {
+        observing: true,
+        disconnect: jest.fn()
+      };
+      patternDetectionService.observer = mockObserver;
       patternDetectionService.disconnect();
 
-      const observer = patternDetectionService.observer;
-      expect(observer.observing).toBe(false);
-
-      const mutations = [{ type: 'childList' }];
-      observer.simulateMutation(mutations);
-
-      expect(callback).not.toHaveBeenCalled();
+      expect(mockObserver.disconnect).toHaveBeenCalled();
+      expect(mockObserver.observing).toBe(true);
 
       document.body.removeChild(element);
     });

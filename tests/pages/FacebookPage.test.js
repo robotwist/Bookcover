@@ -11,61 +11,32 @@ describe('FacebookPage', () => {
   let mockPatternDetectionService;
   let mockFeedElement;
   let mockReelsElement;
+  let mockStoriesElement;
 
-  beforeEach(() => {
-    // Reset singleton instances
-    ConfigService.instance = null;
-    PatternDetectionService.instance = null;
-
-    // Create mock instances
+  beforeEach(async () => {
     mockConfigService = {
-      getSelector: jest.fn().mockImplementation((key) => {
-        const selectors = {
-          feed: '[role="feed"]',
-          reels: '[role="region"][aria-label*="Reels"]',
-          stories: '[role="region"][aria-label*="Stories"]'
-        };
-        return selectors[key];
-      }),
-      getConfig: jest.fn().mockReturnValue({
-        selectors: {
-          feed: '[role="feed"]',
-          reels: '[role="region"][aria-label*="Reels"]',
-          stories: '[role="region"][aria-label*="Stories"]'
-        }
-      })
+      getInstance: jest.fn().mockReturnThis(),
+      getSelector: jest.fn().mockImplementation((key) => `[role="${key}"]`),
+      loadConfig: jest.fn().mockResolvedValue(true)
     };
+    ConfigService.getInstance.mockReturnValue(mockConfigService);
+
     mockPatternDetectionService = {
-      findElement: jest.fn(),
-      observeElement: jest.fn(),
-      disconnect: jest.fn()
+      getInstance: jest.fn().mockReturnThis(),
+      initialize: jest.fn().mockResolvedValue(true),
+      findElement: jest.fn()
     };
+    PatternDetectionService.getInstance.mockReturnValue(mockPatternDetectionService);
 
-    // Mock static getInstance methods
-    ConfigService.getInstance = jest.fn().mockReturnValue(mockConfigService);
-    PatternDetectionService.getInstance = jest.fn().mockReturnValue(mockPatternDetectionService);
-
-    // Create mock DOM elements
     mockFeedElement = document.createElement('div');
     mockFeedElement.setAttribute('role', 'feed');
-    document.body.appendChild(mockFeedElement);
-
     mockReelsElement = document.createElement('div');
-    mockReelsElement.setAttribute('role', 'region');
-    mockReelsElement.setAttribute('aria-label', 'Reels');
-    document.body.appendChild(mockReelsElement);
+    mockReelsElement.setAttribute('role', 'navigation');
+    mockStoriesElement = document.createElement('div');
+    mockStoriesElement.setAttribute('role', 'complementary');
 
     facebookPage = new FacebookPage();
-  });
-
-  afterEach(() => {
-    if (mockFeedElement && mockFeedElement.parentNode) {
-      mockFeedElement.parentNode.removeChild(mockFeedElement);
-    }
-    if (mockReelsElement && mockReelsElement.parentNode) {
-      mockReelsElement.parentNode.removeChild(mockReelsElement);
-    }
-    jest.clearAllMocks();
+    await facebookPage.initialize();
   });
 
   it('should initialize components', () => {

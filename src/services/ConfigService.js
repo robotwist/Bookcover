@@ -45,15 +45,14 @@ class ConfigService {
       return true;
     } catch (error) {
       console.warn('Bookcover: Using default configuration due to error:', error);
-      this.config = this.defaultConfig;
-      return true;
+      this.config = null;
+      return false;
     }
   }
 
   getSelector(key) {
     if (!this.config) {
-      console.warn('Bookcover: Config not loaded, using default configuration');
-      this.config = this.defaultConfig;
+      throw new Error('Config not loaded');
     }
     const selector = this.config.selectors[key];
     if (!selector) {
@@ -64,8 +63,7 @@ class ConfigService {
 
   getConfig() {
     if (!this.config) {
-      console.warn('Bookcover: Config not loaded, using default configuration');
-      this.config = this.defaultConfig;
+      throw new Error('Config not loaded');
     }
     return this.config;
   }

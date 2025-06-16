@@ -14,22 +14,25 @@ class ContentScript {
     this.patternDetectionService = PatternDetectionService.getInstance();
     this.feed = new Feed();
     this.stories = new Stories();
-    this.page = new FacebookPage(this.feed, this.stories);
+    this.page = new FacebookPage();
   }
 
   async initialize() {
     try {
       // Load configuration
-      await this.configService.loadConfig();
+      const configLoaded = await this.configService.loadConfig();
+      if (!configLoaded) {
+        throw new Error('Failed to load configuration');
+      }
       
-      // Initialize pattern detection
-      await this.patternDetectionService.initialize();
-      
-      // Initialize Facebook page components
-      await this.page.initialize();
+      // Initialize Facebook page
+      const pageInitialized = await this.page.initialize();
+      if (!pageInitialized) {
+        throw new Error('Failed to initialize Facebook page');
+      }
       
       this.setupMessageListener();
-      console.log('Bookcover initialized successfully');
+      console.log('Bookcover: Content script initialized successfully');
       return true;
     } catch (error) {
       console.error('Bookcover: Error initializing content script:', error);
@@ -40,7 +43,12 @@ class ContentScript {
   setupMessageListener() {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.action === 'toggleDistractions') {
-        this.handleToggleDistractions(request.show).then(sendResponse);
+        this.handleToggleDistractions(request.show)
+          .then(sendResponse)
+          .catch(error => {
+            console.error('Bookcover: Error handling message:', error);
+            sendResponse({ success: false, error: error.message });
+          });
         return true;
       }
       return false;
@@ -65,7 +73,13 @@ class ContentScript {
 // Initialize the content script when the page is ready
 const contentScript = new ContentScript();
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => contentScript.initialize());
+  document.addEventListener('DOMContentLoaded', () => {
+    contentScript.initialize().catch(error => {
+      console.error('Bookcover: Failed to initialize content script:', error);
+    });
+  });
 } else {
-  contentScript.initialize();
+  contentScript.initialize().catch(error => {
+    console.error('Bookcover: Failed to initialize content script:', error);
+  });
 }

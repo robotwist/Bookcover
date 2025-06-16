@@ -15,7 +15,29 @@ class FacebookPage {
     this.feed = null;
     this.reels = null;
     this.stories = null;
-    this.initializeComponents();
+  }
+
+  async initialize() {
+    try {
+      // Initialize pattern detection first
+      await this.patternDetection.initialize();
+      
+      // Initialize components
+      this.initializeComponents();
+      
+      // Initialize each component
+      await Promise.all([
+        this.feed.initialize(),
+        this.reels.initialize(),
+        this.stories.initialize()
+      ]);
+      
+      console.log('Bookcover: Facebook page initialized successfully');
+      return true;
+    } catch (error) {
+      console.error('Bookcover: Error initializing Facebook page:', error);
+      return false;
+    }
   }
 
   initializeComponents() {
