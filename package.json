@@ -4,12 +4,14 @@
   "description": "A browser extension to enhance Facebook experience by removing distractions",
   "main": "src/content.js",
   "scripts": {
-    "test": "jest",
+    "clean": "rm -rf dist/ coverage/",
+    "test": "jest --coverage --verbose",
     "test:watch": "jest --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "build": "webpack --mode production && npm run copy-files",
+    "build": "npm run clean && webpack --mode production && npm run copy-files && npm run package",
     "copy-files": "cp manifest.json dist/ && cp -r src/assets dist/",
+    "package": "cd dist && zip -r ../dist/bookcover.zip * && cd ..",
     "dev": "webpack --mode development --watch"
   },
   "devDependencies": {

@@ -20,18 +20,25 @@ class FacebookPage {
   async initialize() {
     try {
       // Initialize pattern detection first
-      await this.patternDetection.initialize();
-      
+      const patternDetectionInitialized = await this.patternDetection.initialize();
+      if (!patternDetectionInitialized) {
+        throw new Error('Failed to initialize pattern detection');
+      }
+
       // Initialize components
       this.initializeComponents();
-      
+
       // Initialize each component
-      await Promise.all([
+      const [feedInitialized, reelsInitialized, storiesInitialized] = await Promise.all([
         this.feed.initialize(),
         this.reels.initialize(),
         this.stories.initialize()
       ]);
-      
+
+      if (!feedInitialized || !reelsInitialized || !storiesInitialized) {
+        throw new Error('Failed to initialize one or more components');
+      }
+
       console.log('Bookcover: Facebook page initialized successfully');
       return true;
     } catch (error) {
@@ -47,46 +54,66 @@ class FacebookPage {
   }
 
   async hideFeed() {
-    try {
-      await this.feed.hide();
-    } catch (error) {
-      console.error('Bookcover: Error hiding feed:', error);
+    if (!this.feed) {
+      throw new Error('Feed component not initialized');
     }
+    return this.feed.hide();
   }
 
   async hideReels() {
-    try {
-      await this.reels.hide();
-    } catch (error) {
-      console.error('Bookcover: Error hiding reels:', error);
+    if (!this.reels) {
+      throw new Error('Reels component not initialized');
     }
+    return this.reels.hide();
   }
 
   async hideStories() {
-    try {
-      await this.stories.hide();
-    } catch (error) {
-      console.error('Bookcover: Error hiding stories:', error);
+    if (!this.stories) {
+      throw new Error('Stories component not initialized');
     }
+    return this.stories.hide();
+  }
+
+  async showDistractions() {
+    if (!this.feed || !this.reels || !this.stories) {
+      throw new Error('Components not initialized');
+    }
+    await Promise.all([
+      this.feed.show(),
+      this.reels.show(),
+      this.stories.show()
+    ]);
   }
 
   async hideDistractions() {
+    if (!this.feed || !this.reels || !this.stories) {
+      throw new Error('Components not initialized');
+    }
     await Promise.all([
-      this.hideFeed(),
-      this.hideReels(),
-      this.hideStories()
+      this.feed.hide(),
+      this.reels.hide(),
+      this.stories.hide()
     ]);
   }
 
   async isFeedHidden() {
+    if (!this.feed) {
+      throw new Error('Feed component not initialized');
+    }
     return this.feed.isHidden();
   }
 
   async isReelsHidden() {
+    if (!this.reels) {
+      throw new Error('Reels component not initialized');
+    }
     return this.reels.isHidden();
   }
 
   async isStoriesHidden() {
+    if (!this.stories) {
+      throw new Error('Stories component not initialized');
+    }
     return this.stories.isHidden();
   }
 }

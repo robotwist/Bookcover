@@ -1,7 +1,5 @@
 import ConfigService from './services/ConfigService';
 import PatternDetectionService from './services/PatternDetectionService';
-import Feed from './pages/components/Feed';
-import Stories from './pages/components/Stories';
 import FacebookPage from './pages/FacebookPage';
 
 /**
@@ -12,8 +10,6 @@ class ContentScript {
   constructor() {
     this.configService = ConfigService.getInstance();
     this.patternDetectionService = PatternDetectionService.getInstance();
-    this.feed = new Feed();
-    this.stories = new Stories();
     this.page = new FacebookPage();
   }
 
