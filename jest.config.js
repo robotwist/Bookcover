@@ -8,6 +8,8 @@ module.exports = {
   transform: {
     '^.+\\.js$': 'babel-jest'
   },
+  collectCoverage: true,
+  coverageDirectory: "coverage",
   collectCoverageFrom: [
     'src/**/*.js',
     '!src/**/*.test.js',

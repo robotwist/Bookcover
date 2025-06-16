@@ -17,7 +17,18 @@ describe('FacebookPage', () => {
     mockConfigService = {
       getInstance: jest.fn().mockReturnThis(),
       getSelector: jest.fn().mockImplementation((key) => `[role="${key}"]`),
-      loadConfig: jest.fn().mockResolvedValue(true)
+      loadConfig: jest.fn().mockResolvedValue(true),
+      getConfig: jest.fn().mockReturnValue({
+        selectors: {
+          feed: '[role="feed"]',
+          reels: '[role="navigation"]',
+          stories: '[role="complementary"]'
+        },
+        keywords: {
+          friend_family: ['Friend', 'Close Friend', 'Family', 'Following'],
+          suggested: ['Suggested for you', 'Suggested Group', 'Suggested Page']
+        }
+      })
     };
     ConfigService.getInstance.mockReturnValue(mockConfigService);
 
@@ -45,10 +56,26 @@ describe('FacebookPage', () => {
     expect(facebookPage.stories).toBeDefined();
   });
 
-  it('should hide feed elements', async () => {
+  it('should filter feed elements', async () => {
     mockPatternDetectionService.findElement.mockResolvedValue(mockFeedElement);
+    
+    // Add a friend post
+    const friendPost = document.createElement('div');
+    friendPost.setAttribute('data-pagelet', 'FeedUnit_123');
+    friendPost.textContent = 'Friend post';
+    mockFeedElement.appendChild(friendPost);
+
+    // Add a suggested post
+    const suggestedPost = document.createElement('div');
+    suggestedPost.setAttribute('data-pagelet', 'FeedUnit_456');
+    suggestedPost.textContent = 'Suggested for you';
+    mockFeedElement.appendChild(suggestedPost);
+
     await facebookPage.hideFeed();
-    expect(mockFeedElement.style.display).toBe('none');
+    
+    // Friend post should be visible, suggested post should be hidden
+    expect(friendPost.style.display).not.toBe('none');
+    expect(suggestedPost.style.display).toBe('none');
   });
 
   it('should hide reels elements', async () => {

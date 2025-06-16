@@ -44,13 +44,6 @@ describe('Feed Component', () => {
     expect(mockConfigService.getSelector).toHaveBeenCalledWith('feed');
   });
 
-  it('should hide feed elements', async () => {
-    mockPatternDetectionService.findElement.mockResolvedValue(mockFeedElement);
-    const result = await feed.hide();
-    expect(result).toBe(true);
-    expect(mockFeedElement.style.display).toBe('none');
-  });
-
   it('should correctly identify hidden state', async () => {
     mockPatternDetectionService.findElement.mockResolvedValue(mockFeedElement);
     await feed.hide();

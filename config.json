@@ -12,13 +12,24 @@
       "structure": []
     }
   },
-  "keywords": [
-    "Sponsored",
-    "Reels",
-    "Suggested for You",
-    "Watch",
-    "Stories",
-    "Marketplace",
-    "Gaming"
-  ]
+  "keywords": {
+    "friend_family": [
+      "Friend",
+      "Close Friend",
+      "Family",
+      "Following"
+    ],
+    "suggested": [
+      "Suggested for you",
+      "Suggested Group",
+      "Suggested Page",
+      "You might like",
+      "Recommended for you",
+      "Sponsored",
+      "Watch",
+      "Stories",
+      "Marketplace",
+      "Gaming"
+    ]
+  }
 }

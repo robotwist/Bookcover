@@ -6,7 +6,13 @@
   "permissions": ["scripting", "storage", "activeTab"],
   "host_permissions": ["https://www.facebook.com/*"],
   "web_accessible_resources": [{
-    "resources": ["config.json"],
+    "resources": [
+      "config.json",
+      "content.js",
+      "content.js.map",
+      "runtime.js",
+      "runtime.js.map"
+    ],
     "matches": ["https://www.facebook.com/*"]
   }],
   "action": {
@@ -15,7 +21,7 @@
   "content_scripts": [
     {
       "matches": ["https://www.facebook.com/*"],
-      "js": ["content.js"],
+      "js": ["runtime.js", "content.js"],
       "run_at": "document_idle"
     }
   ]

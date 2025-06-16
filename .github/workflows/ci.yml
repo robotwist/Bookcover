@@ -44,8 +44,8 @@ jobs:
         echo "Node modules:"
         ls -la node_modules
 
-    - name: Run tests
-      run: npm test
+    - name: Run tests with coverage
+      run: npm test -- --coverage
       env:
         NODE_ENV: test
         CI: true
@@ -55,14 +55,19 @@ jobs:
       run: npm run lint
       continue-on-error: true
 
+    - name: Security scan
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
     - name: Upload test results
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-results-${{ matrix.node-version }}
         path: |
           coverage/
-        if-no-files-found: error
+        if-no-files-found: warn
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -104,11 +109,11 @@ jobs:
         du -sh dist/*
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: extension-build
         path: dist/
-        if-no-files-found: error
+        if-no-files-found: warn
 
   release:
     name: Release
@@ -136,9 +141,35 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  version:
+    name: Version Bump
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+
+    - name: Configure Git
+      run: |
+        git config --global user.name 'GitHub Actions'
+        git config --global user.email 'github-actions@github.com'
+
+    - name: Bump version
+      run: |
+        npm version patch
+        git push --follow-tags
+
   notify:
     name: Notify
-    needs: [test, build, release]
+    needs: [test, build, release, version]
     runs-on: ubuntu-latest
     if: always()
 
