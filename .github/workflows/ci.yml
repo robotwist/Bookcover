@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [16.x, 18.x]
+        node-version: [18.x]
         os: [ubuntu-latest]
 
     steps:
@@ -43,9 +43,11 @@ jobs:
         ls -la
         echo "Node modules:"
         ls -la node_modules
+        echo "Jest config:"
+        cat jest.config.js
 
     - name: Run tests with coverage
-      run: npm test -- --coverage
+      run: npm test -- --coverage --verbose
       env:
         NODE_ENV: test
         CI: true
