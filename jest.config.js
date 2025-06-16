@@ -37,7 +37,5 @@ module.exports = {
     url: 'http://localhost'
   },
   // Ensure we're not running in watch mode in CI
-  watchAll: false,
-  // Ensure we're not running in interactive mode in CI
-  interactive: false
+  watchAll: false
 }; 
