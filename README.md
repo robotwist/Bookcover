@@ -1,5 +1,7 @@
 # Bookcover - A Distraction-Free Facebook Experience
 
+[![CI/CD](https://github.com/robwistrand/Bookcover/actions/workflows/ci.yml/badge.svg)](https://github.com/robwistrand/Bookcover/actions/workflows/ci.yml)
+
 Bookcover is a browser extension that enhances your Facebook experience by removing distracting elements and helping you focus on what matters most.
 
 ## Features

@@ -16,6 +16,10 @@ class Feed {
   async initialize() {
     try {
       this.feedContainer = await this.patternDetection.findElement(this.feedSelector);
+      if (this.feedContainer) {
+        // Set up a mutation observer to filter new posts as they appear
+        this.observeFeedChanges();
+      }
       return true;
     } catch (error) {
       console.error('Bookcover: Error initializing feed:', error);
@@ -23,24 +27,77 @@ class Feed {
     }
   }
 
+  observeFeedChanges() {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.addedNodes.length) {
+          this.filterPosts();
+        }
+      });
+    });
+
+    observer.observe(this.feedContainer, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  filterPosts() {
+    if (!this.feedContainer) return;
+
+    // Get all feed units
+    const feedUnits = this.feedContainer.querySelectorAll('div[data-pagelet^="FeedUnit_"]');
+    
+    feedUnits.forEach(unit => {
+      // Check if the post is from a friend or family member
+      const isFriendOrFamily = this.isFriendOrFamilyPost(unit);
+      
+      // Check if it's a suggested post or group
+      const isSuggested = this.isSuggestedContent(unit);
+      
+      // Show only friend/family posts, hide everything else
+      unit.style.display = isFriendOrFamily && !isSuggested ? 'block' : 'none';
+    });
+  }
+
+  isFriendOrFamilyPost(postElement) {
+    // Look for friend/family indicators in the post
+    const friendIndicators = [
+      'Friend',
+      'Close Friend',
+      'Family',
+      'Following'
+    ];
+    
+    const postText = postElement.textContent;
+    return friendIndicators.some(indicator => postText.includes(indicator));
+  }
+
+  isSuggestedContent(postElement) {
+    // Look for suggested content indicators
+    const suggestedIndicators = [
+      'Suggested for you',
+      'Suggested Group',
+      'Suggested Page',
+      'You might like',
+      'Recommended for you'
+    ];
+    
+    const postText = postElement.textContent;
+    return suggestedIndicators.some(indicator => postText.includes(indicator));
+  }
+
   async hide() {
     try {
       this.feedContainer = await this.patternDetection.findElement(this.feedSelector);
       if (this.feedContainer) {
-        // Hide the main feed container
-        this.feedContainer.style.display = 'none';
-        
-        // Hide all feed units and sponsored content
-        const elements = document.querySelectorAll('div[data-pagelet^="FeedUnit_"], [aria-label="Sponsored"]');
-        elements.forEach(element => {
-          element.style.display = 'none';
-        });
-        
+        // Instead of hiding the entire feed, filter the posts
+        this.filterPosts();
         return true;
       }
       return false;
     } catch (error) {
-      console.error('Bookcover: Error hiding feed:', error);
+      console.error('Bookcover: Error filtering feed:', error);
       return false;
     }
   }
@@ -49,15 +106,11 @@ class Feed {
     try {
       this.feedContainer = await this.patternDetection.findElement(this.feedSelector);
       if (this.feedContainer) {
-        // Show the main feed container
-        this.feedContainer.style.display = 'block';
-        
-        // Show all feed units and sponsored content
-        const elements = document.querySelectorAll('div[data-pagelet^="FeedUnit_"], [aria-label="Sponsored"]');
-        elements.forEach(element => {
-          element.style.display = 'block';
+        // Show all posts
+        const feedUnits = this.feedContainer.querySelectorAll('div[data-pagelet^="FeedUnit_"]');
+        feedUnits.forEach(unit => {
+          unit.style.display = 'block';
         });
-        
         return true;
       }
       return false;
@@ -71,7 +124,9 @@ class Feed {
     if (!this.feedContainer) {
       return false;
     }
-    return this.feedContainer.style.display === 'none';
+    // Check if any posts are visible
+    const visiblePosts = this.feedContainer.querySelectorAll('div[data-pagelet^="FeedUnit_"][style="display: block"]');
+    return visiblePosts.length === 0;
   }
 }
 

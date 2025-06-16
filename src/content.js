@@ -8,9 +8,27 @@ import FacebookPage from './pages/FacebookPage';
  */
 class ContentScript {
   constructor() {
-    this.configService = ConfigService.getInstance();
-    this.patternDetectionService = PatternDetectionService.getInstance();
-    this.page = new FacebookPage();
+    try {
+      this.configService = ConfigService.getInstance();
+      this.patternDetectionService = PatternDetectionService.getInstance();
+      this.page = new FacebookPage();
+      
+      // Add runtime checks
+      if (!this.page || typeof this.page.initialize !== 'function') {
+        throw new Error('FacebookPage not properly initialized');
+      }
+      
+      if (!this.configService || typeof this.configService.loadConfig !== 'function') {
+        throw new Error('ConfigService not properly initialized');
+      }
+      
+      if (!this.patternDetectionService || typeof this.patternDetectionService.initialize !== 'function') {
+        throw new Error('PatternDetectionService not properly initialized');
+      }
+    } catch (error) {
+      console.error('Bookcover: Error in ContentScript constructor:', error);
+      throw error;
+    }
   }
 
   async initialize() {
@@ -67,15 +85,20 @@ class ContentScript {
 }
 
 // Initialize the content script when the page is ready
-const contentScript = new ContentScript();
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
+let contentScript;
+try {
+  contentScript = new ContentScript();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      contentScript.initialize().catch(error => {
+        console.error('Bookcover: Failed to initialize content script:', error);
+      });
+    });
+  } else {
     contentScript.initialize().catch(error => {
       console.error('Bookcover: Failed to initialize content script:', error);
     });
-  });
-} else {
-  contentScript.initialize().catch(error => {
-    console.error('Bookcover: Failed to initialize content script:', error);
-  });
+  }
+} catch (error) {
+  console.error('Bookcover: Failed to create ContentScript instance:', error);
 }
