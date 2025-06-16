@@ -29,23 +29,27 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
 
-    - name: Cache node_modules
-      uses: actions/cache@v3
-      with:
-        path: node_modules
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
-
     - name: Install dependencies
       run: npm ci
       env:
         NODE_ENV: development
 
+    - name: Debug environment
+      run: |
+        echo "Node version: $(node -v)"
+        echo "NPM version: $(npm -v)"
+        echo "Current directory: $(pwd)"
+        echo "Directory contents:"
+        ls -la
+        echo "Node modules:"
+        ls -la node_modules
+
     - name: Run tests
       run: npm test
       env:
         NODE_ENV: test
+        CI: true
+        DEBUG: jest
 
     - name: Run linting
       run: npm run lint
@@ -86,14 +90,6 @@ jobs:
       with:
         node-version: '18.x'
         cache: 'npm'
-
-    - name: Cache node_modules
-      uses: actions/cache@v3
-      with:
-        path: node_modules
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
 
     - name: Install dependencies
       run: npm ci

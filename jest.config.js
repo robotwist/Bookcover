@@ -1,7 +1,10 @@
 module.exports = {
   testEnvironment: 'jsdom',
   setupFiles: ['./jest.globals.js'],
-  setupFilesAfterEnv: ['./jest.setup.js'],
+  setupFilesAfterEnv: [
+    './jest.setup.js',
+    'jest-mock-console/dist/setupTestFramework.js'
+  ],
   transform: {
     '^.+\\.js$': 'babel-jest'
   },
@@ -27,9 +30,12 @@ module.exports = {
   verbose: true,
   silent: false,
   testTimeout: 10000,
-  // Ignore console errors in tests that are expected
-  setupFilesAfterEnv: [
-    './jest.setup.js',
-    'jest-mock-console/dist/setupTestFramework.js'
-  ]
+  // CI-specific configuration
+  testEnvironmentOptions: {
+    url: 'http://localhost'
+  },
+  // Ensure we're not running in watch mode in CI
+  watchAll: false,
+  // Ensure we're not running in interactive mode in CI
+  interactive: false
 }; 
